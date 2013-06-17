@@ -1,33 +1,9 @@
 #pragma once
 #include <BWAPI.h>
-#include <map>
-
-enum Action
-{
-  Attack,
-  Flee,
-  Explore,
-  Init
-};
-
-class State
-{
-public:
-  int health;
-  int underAttack;
-  double distanceToClosestEnemy;
-};
-
-class Observation
-{
-public:
-  Action previousAction;
-  State previousState;
-};
 
 // Remember not to use "Broodwar" in any global class constructor!
 
-class DesolatorModule : public BWAPI::AIModule
+class TrivialModule : public BWAPI::AIModule
 {
 public:
   // Virtual functions for callbacks, leave these as they are.
@@ -51,13 +27,6 @@ public:
   // Everything below this line is safe to modify.
 private:
   BWAPI::Player *us;
-  std::map<int, Observation> observations;
-  std::map<int, State> states;
-  std::map<int, Action> actions;
-  void explore(BWAPI::Unit *unit);
-  void flee(BWAPI::Unit *unit);
-  void findEnemies(BWAPI::Unitset *enemies);
   void evaluateText(std::string text);
-  BWAPI::Unit * findClosestEnemy(BWAPI::Unit *unit);
   bool feedback;
 };

@@ -1,11 +1,14 @@
 #include "DesolatorModule.h"
 #include <iostream>
+#include <cmath>
+#include <algorithm>
 
 using namespace BWAPI;
 using namespace Filter;
 
 void DesolatorModule::onStart()
 {
+  /*** STANDARD IMPLEMENTATION ***/
   // Hello World!
   Broodwar->sendText("Desolator Module activated!");
 
@@ -26,7 +29,6 @@ void DesolatorModule::onStart()
   // Check if this is a replay
   if ( Broodwar->isReplay() )
   {
-
     // Announce the players in the replay
     Broodwar << "The following players are in this replay:" << std::endl;
     
@@ -47,6 +49,7 @@ void DesolatorModule::onStart()
     if ( Broodwar->enemy() ) // First make sure there is an enemy
       Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
 
+    /*** DESOLATOR IMPLEMENTATION ***/
     this->us = Broodwar->self();
     BWAPI::Unitset myUnits = this->us->getUnits();
 
@@ -57,13 +60,12 @@ void DesolatorModule::onStart()
       State state = State();
       state.health = u->getHitPoints() + u->getShields();
       state.underAttack = u->isUnderAttack();
-      state.distanceToClosestEnemy = this->findClosestEnemy(*u);
+      state.distanceToClosestEnemy = u->getDistance(this->findClosestEnemy(*u));
       
-      this->actions.push_back(action);
-      this->states.push_back(state);
+      this->actions[u->getID()] = action;
+      this->states[u->getID()] = state;
     }
-
-    this->observations = std::vector<Observation>(myUnits.size());
+    this->feedback = false;
   }
 }
 
@@ -78,8 +80,7 @@ void DesolatorModule::onEnd(bool isWinner)
 
 void DesolatorModule::onFrame()
 {
-  // Called once every game frame
-
+  /*** STANDARD IMPLEMENTATION ***/
   // Display the game frame rate as text in the upper left area of the screen
   Broodwar->drawTextScreen(5, 0,  "FPS: %d", Broodwar->getFPS() );
   Broodwar->drawTextScreen(5, 10, "Average FPS: %f", Broodwar->getAverageFPS() );
@@ -93,12 +94,21 @@ void DesolatorModule::onFrame()
   if ( Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0 )
     return;
 
-  // Check if enemies are seen.
-  BWAPI::Unitset enemies = BWAPI::Unitset();
-  this->findEnemies(&enemies);
+  /*** DESOLATOR IMPLEMENTATION ***/
+  // For feedback
+  if(this->feedback)
+  {
+    // Stop all units.
+    BWAPI::Unitset units = this->us->getUnits();
+    for(BWAPI::Unitset::iterator unit = units.begin(); unit != units.end(); unit++)
+    {
+      unit->stop();
+    }
+    return;
+  }
 
-  // Update observations and state
   Unitset myUnits = this->us->getUnits();
+  /* Switched off for testing
   int i = 0;
   for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
   {
@@ -118,7 +128,7 @@ void DesolatorModule::onFrame()
       state.underAttack,
       state.distanceToClosestEnemy);
   }
-
+  */
 
   for ( Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
   {
@@ -127,128 +137,59 @@ void DesolatorModule::onFrame()
     if ( !u->exists() )
       continue;
 
-
-
-
-    // Ignore the unit if it has one of the following status ailments
-    if ( u->isLockedDown() || u->isMaelstrommed() || u->isStasised() )
-      continue;
-
-    // Ignore the unit if it is in one of the following states
-    if ( u->isLoaded() || u->isUnpowered() || u->isStuck() )
-      continue;
-
-    // Ignore the unit if it is incomplete or busy constructing
-    if ( !u->isCompleted() || u->isConstructing() )
-      continue;
-
-    if ( !u->isIdle() )
-      continue;
-
-    this->explore(*u);
-    // Finally make the unit do some stuff!
-
-	/*
-    // If the unit is a worker unit
-    if ( u->getType().isWorker() )
+    BWAPI::Unit *enemy = this->findClosestEnemy(*u);
+    if(enemy == NULL)
     {
-      // if our worker is idle
-      if ( u->isIdle() )
+      if(!u->isMoving())
       {
-        // Order workers carrying a resource to return them to the center,
-        // otherwise find a mineral patch to harvest.
-        if ( u->isCarryingGas() || u->isCarryingMinerals() )
+        this->explore(*u);
+        this->actions[u->getID()] = Explore;
+      }
+    } else {
+      if(u->isUnderAttack())
+      {
+        if(this->actions[u->getID()] != Flee)
         {
-          u->returnCargo();
+          this->flee(*u);
+          this->actions[u->getID()] = Flee;
         }
-        else if ( !u->getPowerUp() )  // The worker cannot harvest anything if it
-        {                             // is carrying a powerup such as a flag
-          // Harvest from the nearest mineral patch or gas refinery
-          if ( !u->gather( u->getClosestUnit( IsMineralField || IsRefinery )) )
-          {
-            // If the call fails, then print the last error message
-            Broodwar << Broodwar->getLastError() << std::endl;
-          }
-
-        } // closure: has no powerup
-      } // closure: if idle
-
-    }
-    else if ( u->getType().isResourceDepot() ) // A resource depot is a Command Center, Nexus, or Hatchery
-    {
-
-      // Order the depot to construct more workers! But only when it is idle.
-      if ( u->isIdle() && !u->train(u->getType().getRace().getWorker()) )
+      }
+      else if(this->actions[u->getID()] != Attack)
       {
-        // If that fails, draw the error at the location so that you can visibly see what went wrong!
-        // However, drawing the error once will only appear for a single frame
-        // so create an event that keeps it on the screen for some frames
-        Position pos = u->getPosition();
-        Error lastErr = Broodwar->getLastError();
-        Broodwar->registerEvent([pos,lastErr](Game*){ Broodwar->drawTextMap(pos, "%c%s", Text::White, lastErr.c_str()); },   // action
-                                nullptr,    // condition
-                                Broodwar->getLatencyFrames());  // frames to run
-
-        // Retrieve the supply provider type in the case that we have run out of supplies
-        UnitType supplyProviderType = u->getType().getRace().getSupplyProvider();
-        static int lastChecked = 0;
-
-        // If we are supply blocked and haven't tried constructing more recently
-        if (  lastErr == Errors::Insufficient_Supply &&
-              lastChecked + 400 < Broodwar->getFrameCount() &&
-              Broodwar->self()->incompleteUnitCount(supplyProviderType) == 0 )
-        {
-          lastChecked = Broodwar->getFrameCount();
-
-          // Retrieve a unit that is capable of constructing the supply needed
-          Unit *supplyBuilder = u->getClosestUnit(  GetType == supplyProviderType.whatBuilds().first &&
-                                                    (IsIdle || IsGatheringMinerals) &&
-                                                    IsOwned);
-          // If a unit was found
-          if ( supplyBuilder )
-          {
-            if ( supplyProviderType.isBuilding() )
-            {
-              TilePosition targetBuildLocation = Broodwar->getBuildLocation(supplyProviderType, supplyBuilder->getTilePosition());
-              if ( targetBuildLocation )
-              {
-                // Register an event that draws the target build location
-                Broodwar->registerEvent([targetBuildLocation,supplyProviderType](Game*)
-                                        {
-                                          Broodwar->drawBoxMap( Position(targetBuildLocation),
-                                                                Position(targetBuildLocation + supplyProviderType.tileSize()),
-                                                                Colors::Blue);
-                                        },
-                                        nullptr,  // condition
-                                        supplyProviderType.buildTime() + 100 );  // frames to run
-
-                // Order the builder to construct the supply structure
-                supplyBuilder->build( supplyProviderType, targetBuildLocation );
-              }
-            }
-            else
-            {
-              // Train the supply provider (Overlord) if the provider is not a structure
-              supplyBuilder->train( supplyProviderType );
-            }
-          } // closure: supplyBuilder is valid
-        } // closure: insufficient supply
-      } // closure: failed to train idle unit
-
+        u->attack(enemy->getPosition());
+        this->actions[u->getID()] = Attack;
+        Broodwar->printf("Attacking enemy at: %d %d", enemy->getTilePosition().x, enemy->getTilePosition().y);
+      }
     }
-	*/
   } // closure: unit iterator
 }
 
-void DesolatorModule::explore(BWAPI::Unit *explorer)
+void DesolatorModule::explore(BWAPI::Unit *unit)
 {
   /* Simple explore module move randomly to explore the map */
   int x = rand() % (Broodwar->mapWidth());
   int y = rand() % (Broodwar->mapHeight());
 
   TilePosition pos(x, y);
-  explorer->move(Position(pos));
+  unit->move(Position(pos));
   Broodwar->printf("Exploring: (%d, %d) ", x, y);
+}
+
+void DesolatorModule::flee(BWAPI::Unit *unit)
+{
+  BWAPI::Unit *enemy = this->findClosestEnemy(unit);
+  if(enemy == NULL)
+    return;
+
+  BWAPI::TilePosition enemyPos = enemy->getTilePosition();
+  BWAPI::TilePosition unitPos = unit->getTilePosition();
+  int dx = unitPos.x - enemyPos.x;
+  int dy = unitPos.y - enemyPos.y;
+  int x = std::max(std::min(unitPos.x + dx * 5, Broodwar->mapWidth()), 0);
+  int y = std::max(std::min(unitPos.y + dy * 5, Broodwar->mapHeight()), 0);
+  TilePosition pos(x, y);
+  unit->move(Position(pos));
+  Broodwar->printf("Fleeing: (%d, %d) ", x, y);
 }
 
 void DesolatorModule::findEnemies(BWAPI::Unitset *enemies)
@@ -266,39 +207,65 @@ void DesolatorModule::findEnemies(BWAPI::Unitset *enemies)
   }
 }
 
-double DesolatorModule::findClosestEnemy(BWAPI::Unit *unit)
+BWAPI::Unit * DesolatorModule::findClosestEnemy(BWAPI::Unit *unit)
 {
   BWAPI::Unitset enemies = BWAPI::Unitset();
   this->findEnemies(&enemies);
   if(enemies.empty())
-    return -1;
+    return NULL;
 
+  BWAPI::Unit *enemy = NULL;
   double shortestDistance = -1;
   for(BWAPI::Unitset::iterator eUnit = enemies.begin(); eUnit != enemies.end(); eUnit++)
   {    
     double distance = unit->getDistance(*eUnit);
     if(shortestDistance == -1 || distance < shortestDistance)
+    {
       shortestDistance = distance;
+      enemy = *eUnit;
+    }  
   }
-  return shortestDistance;
+  return enemy;
 }
 
 void DesolatorModule::onSendText(std::string text)
 {
-
   // Send the text to the game if it is not being processed.
   Broodwar->sendText("%s", text.c_str());
-
-
+  this->evaluateText(text);
   // Make sure to use %s and pass the text as a parameter,
   // otherwise you may run into problems when you use the %(percent) character!
-
 }
 
 void DesolatorModule::onReceiveText(BWAPI::Player* player, std::string text)
 {
   // Parse the received text
   Broodwar << player->getName() << " said \"" << text << "\"" << std::endl;
+  this->evaluateText(text);
+}
+
+void DesolatorModule::evaluateText(std::string text)
+{
+  if(text == "r")
+  {
+    Broodwar << "Game paused for feedback.";
+    this->feedback = true;
+    return;
+  }
+  else if(this->feedback)
+  {
+    try
+    {
+      int reward = std::stoi(text);
+      this->feedback = false;
+      Broodwar->printf("Reward: %d", reward);
+      Broodwar->sendText("cont");
+      return;
+    } catch (const std::invalid_argument& error)
+    {
+      Broodwar->sendText("Unable to parse text");
+    }
+  }
 }
 
 void DesolatorModule::onPlayerLeft(BWAPI::Player* player)
