@@ -110,15 +110,12 @@ void DesolatorModule::onFrame()
 
   Unitset myUnits = this->us->getUnits();
   
-  int i = 0;
   for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
   {
     // Update observation
-    /*
-    this->observations[i] = Observation();
-    this->observations[i].previousAction = this->actions[i];
-    this->observations[i].previousState = this->states[i];
-    */
+    this->observations[u->getID()] = Observation();
+    this->observations[u->getID()].previousAction = this->actions[u->getID()];
+    this->observations[u->getID()].previousState = this->states[u->getID()];
 
     // Observe new state
     State state = State();
