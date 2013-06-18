@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 
+
 using namespace BWAPI;
 using namespace Filter;
 
@@ -53,15 +54,15 @@ void DesolatorModule::onStart()
     this->us = Broodwar->self();
     BWAPI::Unitset myUnits = this->us->getUnits();
 
-    // Initialize state and action
+    // Initialize state and action for every unit
     for(BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); u++)
     {
       Action action = Init;
       State state = State();
       state.health = u->getHitPoints() + u->getShields();
-      state.underAttack = u->isUnderAttack();
-      state.distanceToClosestEnemy = u->getDistance(this->findClosestEnemy(*u));
-      
+      state.lastAttack = time(0) - 10;
+      state.timestamp = time(0);
+
       this->actions[u->getID()] = action;
       this->states[u->getID()] = state;
     }
@@ -108,27 +109,28 @@ void DesolatorModule::onFrame()
   }
 
   Unitset myUnits = this->us->getUnits();
-  /* Switched off for testing
+  
   int i = 0;
   for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
   {
     // Update observation
+    /*
     this->observations[i] = Observation();
     this->observations[i].previousAction = this->actions[i];
     this->observations[i].previousState = this->states[i];
+    */
 
     // Observe new state
     State state = State();
     state.health = u->getHitPoints() + u->getShields();
-    state.underAttack = u->isUnderAttack();
-    state.distanceToClosestEnemy = this->findClosestEnemy(*u);
-    this->states[i] = state;
-    Broodwar->printf("State = {Health: %d, Under attack: %d, Closest enemy: %f}",
-      state.health,
-      state.underAttack,
-      state.distanceToClosestEnemy);
+    if(state.health < this->states[u->getID()].health)
+      state.lastAttack = time(0);
+    else
+      state.lastAttack = this->states[u->getID()].lastAttack;
+    state.timestamp = time(0);
+
+    this->states[u->getID()] = state;
   }
-  */
 
   for ( Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
   {
@@ -146,7 +148,7 @@ void DesolatorModule::onFrame()
         this->actions[u->getID()] = Explore;
       }
     } else {
-      if(u->isUnderAttack())
+      if(time(0) - this->states[u->getID()].lastAttack < 2)
       {
         if(this->actions[u->getID()] != Flee)
         {

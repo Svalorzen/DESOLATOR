@@ -1,6 +1,7 @@
 #pragma once
 #include <BWAPI.h>
 #include <map>
+#include <time.h>
 
 enum Action
 {
@@ -13,8 +14,9 @@ enum Action
 class State
 {
 public:
+  time_t timestamp;
+  time_t lastAttack;
   int health;
-  int underAttack;
   double distanceToClosestEnemy;
 };
 
