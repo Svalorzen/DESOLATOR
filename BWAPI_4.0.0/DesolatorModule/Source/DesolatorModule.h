@@ -13,10 +13,17 @@ enum Action
 
 class State
 {
+  /* Represents the state */
 public:
+  int enemyHeatMap;   // Either value (0: free, 1: enemy range, 2: targeted)
+  int friendHeatMap;  // Either value (0: uncovered, 1: covered)
+  int weaponCooldown; // Either value (0: false, 1: true)
+  int canTarget;      // Either value (0: false, 1: true)
+  int health;         // Either value (0: 25%, 1: 50%, 2: 75%, 3: 100%)
+
+  /* Old variables */
   time_t timestamp;
   time_t lastAttack;
-  int health;
   double distanceToClosestEnemy;
 };
 
@@ -53,13 +60,23 @@ public:
   // Everything below this line is safe to modify.
 private:
   BWAPI::Player *us;
+  BWAPI::Player *them;
+
   std::map<int, Observation> observations;
   std::map<int, State> states;
   std::map<int, Action> actions;
-  void explore(BWAPI::Unit *unit);
+
+  State getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, BWAPI::Unitset *enemyUnits);
   void flee(BWAPI::Unit *unit);
   void findEnemies(BWAPI::Unitset *enemies);
   void evaluateText(std::string text);
   BWAPI::Unit * findClosestEnemy(BWAPI::Unit *unit);
+  bool seeEnemies();
   bool feedback;
 };
+
+/* AUXILLARY FUNCTIONS */
+void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy);
+int getActualWeaponRange(BWAPI::Unit *unit);
+bool isMelee(BWAPI::Unit *unit);
+int getOptimizedWeaponRange(BWAPI::Unit *unit);
