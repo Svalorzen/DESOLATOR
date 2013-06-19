@@ -1,5 +1,5 @@
 #include "DesolatorModule.h"
-#include <iostream>
+#include <fstream>
 #include <cmath>
 #include <algorithm>
 
@@ -116,9 +116,7 @@ void DesolatorModule::onFrame()
     */
 
     // Observe new state
-    State state = this->getState(*u, &myUnits, &enemyUnits);
-
-    this->states[u->getID()] = state;
+    states[u->getID()] = getState(*u, &myUnits, &enemyUnits);
   }
 
   if(enemyUnits.empty())
@@ -392,4 +390,47 @@ void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy)
       printLongRange(unit, c);
     }
   }
+}
+
+void DesolatorModule::loadTable(const char * filename) {
+  std::ifstream file(filename, std::ifstream::in);
+
+  file.close();
+}
+void DesolatorModule::saveTable(const char * filename) {
+  std::ofstream file(filename, std::ofstream::out);
+
+  file.close();
+}
+
+// #############################################
+// ################ STATE ######################
+// #############################################
+const int State::statesNumber = 96;
+
+State::State() : enemyHeatMap(0), friendHeatMap(0), weaponCooldown(0), canTarget(0), health(0) {}
+State::State(int i) {
+  if ( i > 95 ) throw std::runtime_error("Index creating State not valid");
+
+  health          = i % 4;
+  i >>= 2;
+  canTarget       = i % 2;
+  i >>= 1;
+  weaponCooldown  = i % 2;
+  i >>= 1;
+  friendHeatMap   = i % 2;
+  i >>= 1;
+  enemyHeatMap    = i;
+}
+
+State::operator int() {
+  int index =
+    ( enemyHeatMap    << 5 ) +  // (0, 1, 2) -> (00, 01, 10)
+    ( friendHeatMap   << 4 ) +  // (0, 1)    -> (0, 1)
+    ( weaponCooldown  << 3 ) +  // (0, 1)    -> (0, 1)
+    ( canTarget       << 2 ) +  // (0, 1)    -> (0, 1)
+    ( health               );   // (0, 1, 2, 3)    -> (00, 01, 10, 11)
+
+  // Final : (0, 95) -> (000 0000, 101 1111)
+  return index;
 }
