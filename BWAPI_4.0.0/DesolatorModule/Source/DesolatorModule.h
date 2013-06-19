@@ -7,9 +7,7 @@
 enum Action
 {
   Attack,
-  Flee,
-  Explore,
-  Init
+  Flee
 };
 
 class State
@@ -29,13 +27,6 @@ public:
   operator int();
 
   static const int statesNumber;
-};
-
-class Observation
-{
-public:
-  Action previousAction;
-  State previousState;
 };
 
 // Remember not to use "Broodwar" in any global class constructor!
@@ -66,9 +57,9 @@ private:
   BWAPI::Player *us;
   BWAPI::Player *them;
 
-  std::map<int, Observation> observations;
   std::map<int, State> states;
   std::map<int, Action> actions;
+  std::map<int, BWAPI::TilePosition> lastPositions;
 
   std::array<std::array<double, 96>, 96> table;
   void loadTable(const char * filename);
@@ -79,12 +70,12 @@ private:
   void findEnemies(BWAPI::Unitset *enemies);
   void evaluateText(std::string text);
   BWAPI::Unit * findClosestEnemy(BWAPI::Unit *unit);
-  bool seeEnemies();
   bool feedback;
 };
 
 /* AUXILLARY FUNCTIONS */
 void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy);
+void drawState(std::map<int, State> *states);
 int getActualWeaponRange(BWAPI::Unit *unit);
 bool isMelee(BWAPI::Unit *unit);
 int getOptimizedWeaponRange(BWAPI::Unit *unit);
