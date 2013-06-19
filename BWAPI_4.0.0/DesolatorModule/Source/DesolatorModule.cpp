@@ -14,6 +14,9 @@ void DesolatorModule::onStart()
   // Hello World!
   Broodwar->sendText("Desolator Module activated!");
 
+  loadTable("test.data");
+  saveTable("test2.data");
+
   // Print the map name.
   // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
   Broodwar << "The map is " << Broodwar->mapName() << "!" << std::endl;
@@ -100,9 +103,21 @@ void DesolatorModule::onFrame()
     return;
   }
 
+  // FOR CAMIEL:
 
+  // This is your change
   BWAPI::Unitset myUnits = this->us->getUnits();
   BWAPI::Unitset enemyUnits = this->them->getUnits();
+  
+  // This is what it should have been (so you don't make copies)
+  // const BWAPI::Unitset & myUnits = this->us->getUnits();
+  // const BWAPI::Unitset & enemyUnits = this->them->getUnits();
+  
+  // This is what it was
+  // auto & myUnits = this->us->getUnits();
+  // auto & enemyUnits = this->them->getUnits();
+
+  // Please leave auto 
 
   // Observe new state
   for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
@@ -391,10 +406,22 @@ void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy)
 void DesolatorModule::loadTable(const char * filename) {
   std::ifstream file(filename, std::ifstream::in);
 
+  for ( size_t i = 0; i < State::statesNumber; i++ )
+    for ( size_t j = 0; j < State::statesNumber; j++ )
+      if ( !(file >> table[i][j]) ) throw std::runtime_error("Couldn't load selected file");;
+  // Should we verify the data in some way?
   file.close();
 }
+
 void DesolatorModule::saveTable(const char * filename) {
   std::ofstream file(filename, std::ofstream::out);
+  int counter = 0;
+  for ( size_t i = 0; i < State::statesNumber; i++ ) {
+    for ( size_t j = 0; j < State::statesNumber; j++ ) {
+      file << table[i][j] << " ";
+    }
+    file << "\n";
+  }
 
   file.close();
 }
@@ -402,35 +429,6 @@ void DesolatorModule::saveTable(const char * filename) {
 // #############################################
 // ################ STATE ######################
 // #############################################
-const int State::statesNumber = 96;
-
-State::State() : enemyHeatMap(0), friendHeatMap(0), weaponCooldown(0), canTarget(0), health(0) {}
-State::State(int i) {
-  if ( i > 95 ) throw std::runtime_error("Index creating State not valid");
-
-  health          = i % 4;
-  i >>= 2;
-  canTarget       = i % 2;
-  i >>= 1;
-  weaponCooldown  = i % 2;
-  i >>= 1;
-  friendHeatMap   = i % 2;
-  i >>= 1;
-  enemyHeatMap    = i;
-}
-
-State::operator int() {
-  int index =
-    ( enemyHeatMap    << 5 ) +  // (0, 1, 2) -> (00, 01, 10)
-    ( friendHeatMap   << 4 ) +  // (0, 1)    -> (0, 1)
-    ( weaponCooldown  << 3 ) +  // (0, 1)    -> (0, 1)
-    ( canTarget       << 2 ) +  // (0, 1)    -> (0, 1)
-    ( health               );   // (0, 1, 2, 3)    -> (00, 01, 10, 11)
-
-  // Final : (0, 95) -> (000 0000, 101 1111)
-  return index;
-}
-
 void drawState(std::map<int, State> *states)
 {
   /* Loops over the states mapping */

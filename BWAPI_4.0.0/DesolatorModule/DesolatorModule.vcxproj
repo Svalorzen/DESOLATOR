@@ -90,9 +90,14 @@
   <ItemGroup>
     <ClCompile Include="Source\Dll.cpp" />
     <ClCompile Include="Source\DesolatorModule.cpp" />
+    <ClCompile Include="Source\state.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\DesolatorModule.h" />
+    <ClInclude Include="Source\state.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
