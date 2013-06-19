@@ -321,11 +321,13 @@ State DesolatorModule::getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, 
   // Update friendly heat map
   for (BWAPI::Unitset::iterator alliedUnit = alliedUnits->begin(); alliedUnit != alliedUnits->end(); alliedUnit++)
   {
-    int allyRealRange = getOptimizedWeaponRange(*alliedUnit);
-    auto & unitsInFriendRange = alliedUnit->getUnitsInRadius(allyRealRange);
-    if (*alliedUnit != unit && unitsInFriendRange.find(unit) != unitsInFriendRange.end() ) {
-      state.friendHeatMap = 1;
-      break;
+    if (*alliedUnit != unit) {
+      int allyRealRange = getOptimizedWeaponRange(*alliedUnit);
+      auto & unitsInFriendRange = alliedUnit->getUnitsInRadius(allyRealRange);
+      if (unitsInFriendRange.find(unit) != unitsInFriendRange.end() ) {
+        state.friendHeatMap = 1;
+        break;
+      }
     }
   }
 
