@@ -6,9 +6,7 @@
 enum Action
 {
   Attack,
-  Flee,
-  Explore,
-  Init
+  Flee
 };
 
 class State
@@ -20,18 +18,6 @@ public:
   int weaponCooldown; // Either value (0: false, 1: true)
   int canTarget;      // Either value (0: false, 1: true)
   int health;         // Either value (0: 25%, 1: 50%, 2: 75%, 3: 100%)
-
-  /* Old variables */
-  time_t timestamp;
-  time_t lastAttack;
-  double distanceToClosestEnemy;
-};
-
-class Observation
-{
-public:
-  Action previousAction;
-  State previousState;
 };
 
 // Remember not to use "Broodwar" in any global class constructor!
@@ -62,21 +48,21 @@ private:
   BWAPI::Player *us;
   BWAPI::Player *them;
 
-  std::map<int, Observation> observations;
   std::map<int, State> states;
   std::map<int, Action> actions;
+  std::map<int, BWAPI::TilePosition> lastPositions;
 
   State getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, BWAPI::Unitset *enemyUnits);
   void flee(BWAPI::Unit *unit);
   void findEnemies(BWAPI::Unitset *enemies);
   void evaluateText(std::string text);
   BWAPI::Unit * findClosestEnemy(BWAPI::Unit *unit);
-  bool seeEnemies();
   bool feedback;
 };
 
 /* AUXILLARY FUNCTIONS */
 void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy);
+void drawState(std::map<int, State> *states);
 int getActualWeaponRange(BWAPI::Unit *unit);
 bool isMelee(BWAPI::Unit *unit);
 int getOptimizedWeaponRange(BWAPI::Unit *unit);

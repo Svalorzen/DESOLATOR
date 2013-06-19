@@ -61,10 +61,7 @@ void DesolatorModule::onStart()
     // Initialize state and action for every unit
     for(BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); u++)
     {
-      Action action = Init;
       State state = this->getState(*u, &myUnits, &enemyUnits);
-
-      this->actions[u->getID()] = action;
       this->states[u->getID()] = state;
     }
     this->feedback = false;
@@ -79,6 +76,7 @@ void DesolatorModule::onFrame()
   Broodwar->drawTextScreen(5, 10, "Average FPS: %f", Broodwar->getAverageFPS() );
 
   drawHeatMap(this->us, this->them);
+  drawState(&this->states);
 
   // Return if the game is a replay or is paused
   if ( Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self() )
@@ -105,20 +103,11 @@ void DesolatorModule::onFrame()
 
   BWAPI::Unitset myUnits = this->us->getUnits();
   BWAPI::Unitset enemyUnits = this->them->getUnits();
-  
+
+  // Observe new state
   for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
   {
-    // Update observation
-    /*
-    this->observations[u->getID()] = Observation();
-    this->observations[u->getID()].previousAction = this->actions[u->getID()];
-    this->observations[u->getID()].previousState = this->states[u->getID()];
-    */
-
-    // Observe new state
-    State state = this->getState(*u, &myUnits, &enemyUnits);
-
-    this->states[u->getID()] = state;
+    this->states[u->getID()] = this->getState(*u, &myUnits, &enemyUnits);
   }
 
   if(enemyUnits.empty())
@@ -135,7 +124,6 @@ void DesolatorModule::onFrame()
       for (; u != myUnits.end(); u++)
       {
         u->move(BWAPI::Position(pos));
-        this->actions[u->getID()] = Explore;
         Broodwar->printf("Explore: (%d, %d)", x, y);
       }
     }
@@ -147,6 +135,16 @@ void DesolatorModule::onFrame()
       // Make sure to include this block when handling any Unit pointer!
       if ( !u->exists() )
         continue;
+
+      // Check when the units moved a tile
+      BWAPI::TilePosition previous = this->lastPositions[u->getID()];
+      BWAPI::TilePosition current = u->getTilePosition();
+      if (previous != current)
+        Broodwar->printf("Moved from (%d, %d) to (%d, %d)",
+          previous.x,
+          previous.y,
+          current.x,
+          current.y);
 
       BWAPI::Unit *enemy = this->findClosestEnemy(*u);
       if(u->isUnderAttack())
@@ -163,6 +161,9 @@ void DesolatorModule::onFrame()
         this->actions[u->getID()] = Attack;
         Broodwar->printf("Attacking enemy at: %d %d", enemy->getTilePosition().x, enemy->getTilePosition().y);
       }
+
+      // Update last positions
+      this->lastPositions[u->getID()] = u->getTilePosition();
     } // closure: unit iterator
   } // closure: else
 }
@@ -313,13 +314,6 @@ State DesolatorModule::getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, 
     }
   }
 
-  Broodwar->printf("State -| HP = %d | Cooldown = %d | EnemyHeat = %d | Covered = %d | canTarget = %d |-",
-    state.health,
-    state.weaponCooldown,
-    state.enemyHeatMap,
-    state.friendHeatMap,
-    state.canTarget);
-
   return state;
 }
 
@@ -391,5 +385,25 @@ void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy)
       printBaseRange(unit, c);
       printLongRange(unit, c);
     }
+  }
+}
+
+void drawState(std::map<int, State> *states)
+{
+  /* Loops over the states mapping */
+  int position = 20;
+  for(std::map<int, State>::iterator i = states->begin(); i != states->end(); i++)
+  {
+    State state = i->second;
+    Broodwar->drawTextScreen(5,
+      position,
+      "Id = %d | Health = %d | Cooldown = %d | EnemyHeat = %d | Covered = %d | canTarget = %d",
+      i->first,
+      state.health,
+      state.weaponCooldown,
+      state.enemyHeatMap,
+      state.friendHeatMap,
+      state.canTarget);
+    position += 10;
   }
 }
