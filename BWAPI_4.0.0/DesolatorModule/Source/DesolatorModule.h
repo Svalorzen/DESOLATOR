@@ -50,10 +50,11 @@ private:
   bool loadTable(const char * filename);
   bool saveTable(const char * filename);
 
+  void explore(const BWAPI::Unitset & units);
+  void attack(BWAPI::Unit *unit, const BWAPI::Unitset & allies, const BWAPI::Unitset & enemies);
   State getState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits);
   BWAPI::Position flee(BWAPI::Unit *unit, const BWAPI::Unitset & friends, const BWAPI::Unitset & enemies);
   void evaluateText(std::string text);
-  BWAPI::Unit * findClosestEnemy(const BWAPI::Unit *unit, const BWAPI::Unitset & enemies);
   bool feedback;
 };
 
