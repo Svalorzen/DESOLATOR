@@ -44,15 +44,15 @@ private:
   std::map<int, Action> actions;
   std::map<int, BWAPI::TilePosition> lastPositions;
 
-  std::array<std::array<double, State::statesNumber>, State::statesNumber> table;
-  void loadTable(const char * filename);
-  void saveTable(const char * filename);
+  std::array<std::array<long unsigned, State::statesNumber>, State::statesNumber> table;
+  bool tableIsValid;
+  bool loadTable(const char * filename);
+  bool saveTable(const char * filename);
 
-  State getState(BWAPI::Unit *unit, const BWAPI::Unitset *alliedUnits, const BWAPI::Unitset *enemyUnits);
-  void flee(BWAPI::Unit *unit);
-  void findEnemies(BWAPI::Unitset *enemies);
+  State getState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits);
+  BWAPI::Position flee(BWAPI::Unit *unit, const BWAPI::Unitset & friends, const BWAPI::Unitset & enemies);
   void evaluateText(std::string text);
-  BWAPI::Unit * findClosestEnemy(BWAPI::Unit *unit);
+  BWAPI::Unit * findClosestEnemy(const BWAPI::Unit *unit, const BWAPI::Unitset & enemies);
   bool feedback;
 };
 

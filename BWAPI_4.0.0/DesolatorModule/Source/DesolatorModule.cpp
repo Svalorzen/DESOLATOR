@@ -10,12 +10,15 @@ const int STANDARD_SPEED_FPS = 19;
 
 void DesolatorModule::onStart()
 {
+  // COMMON VARIABLE INIT
+  tableIsValid = false;
+
   /*** STANDARD IMPLEMENTATION ***/
   // Hello World!
   Broodwar->sendText("Desolator Module activated!");
 
-  loadTable("test.data");
-  saveTable("test2.data");
+  if ( !loadTable("transitions_numbers.data") )
+    Broodwar->printf("###! COULD NOT LOAD TRANSITION NUMBERS !###");
 
   // Print the map name.
   // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
@@ -57,6 +60,7 @@ void DesolatorModule::onStart()
     /*** DESOLATOR IMPLEMENTATION ***/
     this->us = Broodwar->self();
     this->them = Broodwar->enemy();
+    Broodwar->setLocalSpeed(50);
 
     BWAPI::Unitset myUnits = this->us->getUnits();
     BWAPI::Unitset enemyUnits = this->them->getUnits();
@@ -64,8 +68,9 @@ void DesolatorModule::onStart()
     // Initialize state and action for every unit
     for(BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); u++)
     {
-      State state = this->getState(*u, &myUnits, &enemyUnits);
+      State state = this->getState(*u, myUnits, enemyUnits);
       this->states[u->getID()] = state;
+      this->lastPositions[u->getID()] = u->getTilePosition();
     }
     this->feedback = false;
   }
@@ -91,20 +96,6 @@ void DesolatorModule::onFrame()
     return;
 
   /*** DESOLATOR IMPLEMENTATION ***/
-  // For feedback
-  if(this->feedback)
-  {
-    // Stop all units.
-    BWAPI::Unitset units = this->us->getUnits();
-    for(BWAPI::Unitset::iterator unit = units.begin(); unit != units.end(); unit++)
-    {
-      unit->stop();
-    }
-    return;
-  }
-
-  // FOR CAMIEL:
-
   // This is your change
   auto & myUnits = this->us->getUnits();
   auto & enemyUnits = this->them->getUnits();
@@ -114,107 +105,119 @@ void DesolatorModule::onFrame()
   // Observe new state
   for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
   {
-    this->states[u->getID()] = this->getState(*u, &myUnits, &enemyUnits);
+    auto newState = this->getState(*u, myUnits, enemyUnits);
+    // Update table
+    table[states[u->getID()]][newState]++;
+
+    this->states[u->getID()] = newState;
+    this->flee(*u, myUnits, enemyUnits);
   }
+  
 
   if(enemyUnits.empty())
   {
-    // Explore together if no enemies are found and we are not moving.
-    BWAPI::Unitset::iterator u = myUnits.begin();
 
-    if(!u->isMoving())
-    {
-      int x = rand() % (Broodwar->mapWidth());
-      int y = rand() % (Broodwar->mapHeight());
-      BWAPI::TilePosition pos(x, y);
-
-      for (; u != myUnits.end(); u++)
-      {
-        u->move(BWAPI::Position(pos));
-        Broodwar->printf("Explore: (%d, %d)", x, y);
-      }
-    }
   } else {
-    // Otherwise coordinate units.
     for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
     {
-      // Ignore the unit if it no longer exists
-      // Make sure to include this block when handling any Unit pointer!
-      if ( !u->exists() )
-        continue;
-
-      // Check when the units moved a tile
-      BWAPI::TilePosition previous = this->lastPositions[u->getID()];
-      BWAPI::TilePosition current = u->getTilePosition();
-      if (previous != current)
-        Broodwar->printf("Moved from (%d, %d) to (%d, %d)",
-          previous.x,
-          previous.y,
-          current.x,
-          current.y);
-
-      BWAPI::Unit *enemy = this->findClosestEnemy(*u);
-      if(u->isUnderAttack())
-      {
-        if(this->actions[u->getID()] != Flee)
-        {
-          this->flee(*u);
+      bool moved = false;
+      if ( this->lastPositions[u->getID()] != u->getTilePosition() ) {
+        moved = true;
+        this->lastPositions[u->getID()] = u->getTilePosition();
+      }
+     
+      if ( !feedback ) {
           this->actions[u->getID()] = Flee;
-        }
+          if ( this->states[u->getID()].enemyHeatMap == 2 ) {
+            if ( moved || u->getOrder() != Orders::Move )
+              u->move(flee(*u, myUnits, enemyUnits));
+          }
+          else if ( u->getOrder() != Orders::AttackUnit )
+            u->attack(*(enemyUnits.begin()));
       }
-      else if(this->actions[u->getID()] != Attack)
-      {
-        u->attack(enemy->getPosition());
-        this->actions[u->getID()] = Attack;
-        Broodwar->printf("Attacking enemy at: %d %d", enemy->getTilePosition().x, enemy->getTilePosition().y);
-      }
-
-      // Update last positions
-      this->lastPositions[u->getID()] = u->getTilePosition();
     } // closure: unit iterator
   } // closure: else
 }
 
-void DesolatorModule::flee(BWAPI::Unit *unit)
+BWAPI::Position DesolatorModule::flee(BWAPI::Unit *unit, const BWAPI::Unitset & friends, const BWAPI::Unitset & enemies)
 {
-  BWAPI::Unit *enemy = this->findClosestEnemy(unit);
-  if(enemy == NULL)
-    return;
+  double enemyForce = 5000.0;
+  double enemyTargetedForce = 10000.0;
+  // Friends attract
+  double friendForceUncovered = -0.5; // This value is weird because it is not divided by distance
+  double friendForceCovered = 3000.0;
+  // Used to avoid infinite forces when units are near
+  double minDistance = 40.0;
 
-  BWAPI::TilePosition enemyPos = enemy->getTilePosition();
-  BWAPI::TilePosition unitPos = unit->getTilePosition();
-  int dx = unitPos.x - enemyPos.x;
-  int dy = unitPos.y - enemyPos.y;
-  int x = std::max(std::min(unitPos.x + dx * 5, Broodwar->mapWidth()), 0);
-  int y = std::max(std::min(unitPos.y + dy * 5, Broodwar->mapHeight()), 0);
-  TilePosition pos(x, y);
-  unit->move(Position(pos));
-  Broodwar->printf("Fleeing: (%d, %d) ", x, y);
-}
+  Broodwar->drawCircleMap(unit->getPosition(), minDistance, BWAPI::Color(255,255,255));
 
-void DesolatorModule::findEnemies(BWAPI::Unitset *enemies)
-{
-  /* Finds all visible enemies */
-  BWAPI::Playerset players = Broodwar->getPlayers();
+  std::vector<std::pair<double, double>> fieldVectors;
+  fieldVectors.reserve(friends.size() + enemies.size());
 
-  for(BWAPI::Playerset::iterator player = players.begin(); player != players.end(); player++)
-  {
-    if(player->isEnemy(this->us))
-    {
-      BWAPI::Unitset units = player->getUnits();
-      enemies->insert(units);
+  auto unitPos = unit->getPosition();
+
+  BWAPI::Unit* closestFriend = nullptr;
+  for ( auto it = friends.begin(); it != friends.end(); it++ )
+    if ( (closestFriend == nullptr || it->getDistance(unit) < closestFriend->getDistance(unit)) && (*it) != unit )
+      closestFriend = *it;
+
+  // We are alone, jump friend code
+  if ( closestFriend != nullptr ) {
+    auto friendPos = closestFriend->getPosition();
+    // We are not covered
+    if ( !states[unit->getID()].friendHeatMap ) {
+      fieldVectors.emplace_back(std::make_pair(
+        // They should go towards friends the more they are away
+        (unitPos.x - friendPos.x)*friendForceUncovered,
+        (unitPos.y - friendPos.y)*friendForceUncovered
+      ));
+    }
+    else {
+      auto distance = std::max(minDistance, unitPos.getDistance(friendPos));
+      fieldVectors.emplace_back(std::make_pair(
+        // They should go towards friends the more they are away
+        (unitPos.x - friendPos.x)*friendForceCovered / (distance*distance),
+        (unitPos.y - friendPos.y)*friendForceCovered / (distance*distance)
+      ));
     }
   }
+  else
+    Broodwar->printf("No friends!");
+  
+  for ( auto it = enemies.begin(); it != enemies.end(); it++ ) {
+    if ( *it != unit ) {
+      auto enemyPos = (*it)->getPosition();
+      auto distance = std::max(minDistance, unitPos.getDistance(enemyPos));
+      auto force = (*it)->getOrderTarget() == unit ? enemyTargetedForce : enemyForce;
+
+      fieldVectors.emplace_back(std::make_pair(
+        (unitPos.x - enemyPos.x)*force / (distance*distance),
+        (unitPos.y - enemyPos.y)*force / (distance*distance)
+      ));
+    }
+  }
+
+  // Create final vector
+  std::pair<double,double> finalVector = std::make_pair(0.0, 0.0);
+  for ( size_t i = 0; i < fieldVectors.size(); i++ ) {
+    finalVector.first += fieldVectors[i].first;
+    finalVector.second += fieldVectors[i].second;
+  }
+
+  BWAPI::Position placeIwouldLikeToGo = unit->getPosition();
+  placeIwouldLikeToGo.x += static_cast<int>(finalVector.first);
+  placeIwouldLikeToGo.y += static_cast<int>(finalVector.second);
+
+  Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
+  return placeIwouldLikeToGo;
 }
 
-BWAPI::Unit * DesolatorModule::findClosestEnemy(BWAPI::Unit *unit)
+BWAPI::Unit * DesolatorModule::findClosestEnemy(const BWAPI::Unit *unit, const BWAPI::Unitset & enemies)
 {
-  BWAPI::Unitset enemies = BWAPI::Unitset();
-  this->findEnemies(&enemies);
-  if(enemies.empty())
-    return NULL;
+  if(enemies.empty() || !unit)
+    return nullptr;
 
-  BWAPI::Unit *enemy = NULL;
+  BWAPI::Unit *enemy = nullptr;
   double shortestDistance = -1;
   for(BWAPI::Unitset::iterator eUnit = enemies.begin(); eUnit != enemies.end(); eUnit++)
   {    
@@ -227,6 +230,62 @@ BWAPI::Unit * DesolatorModule::findClosestEnemy(BWAPI::Unit *unit)
   }
   return enemy;
 }
+
+
+State DesolatorModule::getState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits)
+{
+  /* Returns the current state of the unit */
+  State state = State();
+
+  // Update health
+  state.health =  (unit->getHitPoints()           + unit->getShields() - 1      ) * 100;
+  state.health /= (unit->getType().maxHitPoints() + unit->getType().maxShields()) * 25;
+  
+  // Update weapon cooldown
+  state.weaponCooldown = unit->getGroundWeaponCooldown() != 0;
+
+  // Update enemy heat map
+  int realRange = getOptimizedWeaponRange(unit);
+  BWAPI::Unitset &unitsInMyRange = unit->getUnitsInRadius(realRange);
+
+  for (BWAPI::Unitset::iterator enemyUnit = enemyUnits.begin(); enemyUnit != enemyUnits.end(); enemyUnit++)
+  {
+    if (state.enemyHeatMap < 2 && unit == enemyUnit->getOrderTarget())
+    {
+      state.enemyHeatMap = 2;
+    }
+    else if(state.enemyHeatMap < 1)
+    {
+      int enemyRealRange = getOptimizedWeaponRange(*enemyUnit);
+      BWAPI::Unitset &unitsInEnemyRange = enemyUnit->getUnitsInRadius(enemyRealRange);
+      // Checks if we are in enemy optimized range
+      if ( unitsInEnemyRange.find(unit) != unitsInEnemyRange.end() )
+        state.enemyHeatMap = 1;
+    }
+
+    if ( !state.canTarget && unitsInMyRange.find(*enemyUnit) != unitsInMyRange.end() )
+      state.canTarget = 1;
+  }
+
+  // Update friendly heat map
+  for (BWAPI::Unitset::iterator alliedUnit = alliedUnits.begin(); alliedUnit != alliedUnits.end(); alliedUnit++)
+  {
+    if (*alliedUnit != unit) {
+      int allyRealRange = getOptimizedWeaponRange(*alliedUnit);
+      auto & unitsInFriendRange = alliedUnit->getUnitsInRadius(allyRealRange);
+      if (unitsInFriendRange.find(unit) != unitsInFriendRange.end() ) {
+        state.friendHeatMap = 1;
+        break;
+      }
+    }
+  }
+
+  return state;
+}
+
+// #############################################
+// ############## TEXT FUNCTIONS ###############
+// #############################################
 
 void DesolatorModule::onSendText(std::string text)
 {
@@ -241,7 +300,6 @@ void DesolatorModule::onReceiveText(BWAPI::Player* player, std::string text)
 {
   // Parse the received text
   Broodwar << player->getName() << " said \"" << text << "\"" << std::endl;
-  this->evaluateText(text);
 }
 
 void DesolatorModule::evaluateText(std::string text)
@@ -268,60 +326,10 @@ void DesolatorModule::evaluateText(std::string text)
   }
 }
 
-State DesolatorModule::getState(BWAPI::Unit *unit, const BWAPI::Unitset *alliedUnits, const BWAPI::Unitset *enemyUnits)
-{
-  /* Returns the current state of the unit */
-  State state = State();
+// #############################################
+// ########### AUXILLARY FUNCTIONS #############
+// #############################################
 
-  // Update health
-  state.health =  (unit->getHitPoints()           + unit->getShields() - 1      ) * 100;
-  state.health /= (unit->getType().maxHitPoints() + unit->getType().maxShields()) * 25;
-  
-  // Update weapon cooldown
-  state.weaponCooldown = unit->getGroundWeaponCooldown() != 0;
-
-  // Update enemy heat map
-  int realRange = getOptimizedWeaponRange(unit);
-  BWAPI::Unitset &unitsInMyRange = unit->getUnitsInRadius(realRange);
-
-  for (BWAPI::Unitset::iterator enemyUnit = enemyUnits->begin(); enemyUnit != enemyUnits->end(); enemyUnit++)
-  {
-    if (state.enemyHeatMap < 2 && unit == enemyUnit->getOrderTarget())
-    {
-      state.enemyHeatMap = 2;
-    }
-    else if(state.enemyHeatMap < 1)
-    {
-      int enemyRealRange = getOptimizedWeaponRange(*enemyUnit);
-      BWAPI::Unitset &unitsInEnemyRange = enemyUnit->getUnitsInRadius(enemyRealRange);
-      // Checks if we are in enemy optimized range
-      if ( unitsInEnemyRange.find(unit) != unitsInEnemyRange.end() )
-        state.enemyHeatMap = 1;
-    }
-
-    if ( !state.canTarget && unitsInMyRange.find(*enemyUnit) != unitsInMyRange.end() )
-      state.canTarget = 1;
-  }
-
-  // Update friendly heat map
-  for (BWAPI::Unitset::iterator alliedUnit = alliedUnits->begin(); alliedUnit != alliedUnits->end(); alliedUnit++)
-  {
-    if (*alliedUnit != unit) {
-      int allyRealRange = getOptimizedWeaponRange(*alliedUnit);
-      auto & unitsInFriendRange = alliedUnit->getUnitsInRadius(allyRealRange);
-      if (unitsInFriendRange.find(unit) != unitsInFriendRange.end() ) {
-        state.friendHeatMap = 1;
-        break;
-      }
-    }
-  }
-
-  return state;
-}
-
-
-/* AUXILLARY FUNCTIONS */
-// Utils functions
 // The range actually takes into consideration unit size, so we try to do that
 int getActualWeaponRange(BWAPI::Unit* unit) {
   return unit->getType().groundWeapon().maxRange() + std::max(unit->getType().dimensionLeft(),unit->getType().dimensionUp());
@@ -340,6 +348,62 @@ int getOptimizedWeaponRange(BWAPI::Unit* unit) {
     return getActualWeaponRange(unit) + static_cast<int>(unit->getType().topSpeed()) * STANDARD_SPEED_FPS;
   else
     return getActualWeaponRange(unit);
+}
+
+// #############################################
+// ############# TABLE FUNCTIONS ###############
+// #############################################
+
+bool DesolatorModule::loadTable(const char * filename) {
+  std::ifstream file(filename, std::ifstream::in);
+
+  for ( size_t i = 0; i < State::statesNumber; i++ )
+    for ( size_t j = 0; j < State::statesNumber; j++ )
+      if ( !(file >> table[i][j]) ) {
+        tableIsValid = false;
+        return false;
+      }
+  // Should we verify the data in some way?
+  file.close();
+  return true;
+}
+
+bool DesolatorModule::saveTable(const char * filename) {
+  if ( !tableIsValid ) return false;
+  std::ofstream file(filename, std::ofstream::out);
+  int counter = 0;
+  for ( size_t i = 0; i < State::statesNumber; i++ ) {
+    for ( size_t j = 0; j < State::statesNumber; j++ ) {
+      file << table[i][j] << " ";
+    }
+    file << "\n";
+  }
+
+  file.close();
+  return true;
+}
+
+// #############################################
+// ########### DRAWING FUNCTIONS ###############
+// #############################################
+void drawState(std::map<int, State> *states)
+{
+  /* Loops over the states mapping */
+  int position = 20;
+  for(std::map<int, State>::iterator i = states->begin(); i != states->end(); i++)
+  {
+    State state = i->second;
+    Broodwar->drawTextScreen(5,
+      position,
+      "Id = %d | Health = %d | Cooldown = %d | EnemyHeat = %d | Covered = %d | canTarget = %d",
+      i->first,
+      state.health,
+      state.weaponCooldown,
+      state.enemyHeatMap,
+      state.friendHeatMap,
+      state.canTarget);
+    position += 10;
+  }
 }
 
 void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy)
@@ -375,53 +439,6 @@ void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy)
   }
 }
 
-void DesolatorModule::loadTable(const char * filename) {
-  std::ifstream file(filename, std::ifstream::in);
-
-  for ( size_t i = 0; i < State::statesNumber; i++ )
-    for ( size_t j = 0; j < State::statesNumber; j++ )
-      if ( !(file >> table[i][j]) ) throw std::runtime_error("Couldn't load selected file");;
-  // Should we verify the data in some way?
-  file.close();
-}
-
-void DesolatorModule::saveTable(const char * filename) {
-  std::ofstream file(filename, std::ofstream::out);
-  int counter = 0;
-  for ( size_t i = 0; i < State::statesNumber; i++ ) {
-    for ( size_t j = 0; j < State::statesNumber; j++ ) {
-      file << table[i][j] << " ";
-    }
-    file << "\n";
-  }
-
-  file.close();
-}
-
-// #############################################
-// ################ STATE ######################
-// #############################################
-void drawState(std::map<int, State> *states)
-{
-  /* Loops over the states mapping */
-  int position = 20;
-  for(std::map<int, State>::iterator i = states->begin(); i != states->end(); i++)
-  {
-    State state = i->second;
-    Broodwar->drawTextScreen(5,
-      position,
-      "Id = %d | Health = %d | Cooldown = %d | EnemyHeat = %d | Covered = %d | canTarget = %d",
-      i->first,
-      state.health,
-      state.weaponCooldown,
-      state.enemyHeatMap,
-      state.friendHeatMap,
-      state.canTarget);
-    position += 10;
-  }
-}
-
-
 
 
 
@@ -454,4 +471,6 @@ void DesolatorModule::onUnitDestroy(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitMorph(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
-void DesolatorModule::onEnd(bool isWinner) {}
+void DesolatorModule::onEnd(bool isWinner) {
+  //saveTable("transitions_number.data");
+}
