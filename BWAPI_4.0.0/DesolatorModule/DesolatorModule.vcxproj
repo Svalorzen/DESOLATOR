@@ -90,10 +90,12 @@
   <ItemGroup>
     <ClCompile Include="Source\Dll.cpp" />
     <ClCompile Include="Source\DesolatorModule.cpp" />
+    <ClCompile Include="Source\gameState.cpp" />
     <ClCompile Include="Source\state.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\DesolatorModule.h" />
+    <ClInclude Include="Source\gameState.h" />
     <ClInclude Include="Source\state.h" />
   </ItemGroup>
   <ItemGroup>

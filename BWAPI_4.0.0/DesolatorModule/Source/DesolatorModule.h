@@ -4,13 +4,7 @@
 #include <array>
 #include <time.h>
 
-#include "state.h"
-
-enum Action
-{
-  Attack,
-  Flee
-};
+#include "gameState.h"
 
 // Remember not to use "Broodwar" in any global class constructor!
 
@@ -40,27 +34,34 @@ private:
   BWAPI::Player *us;
   BWAPI::Player *them;
 
-  std::map<int, State> states;
-  std::map<int, Action> actions;
-  std::map<int, BWAPI::TilePosition> lastPositions;
-
-  std::array<std::array<std::pair<long unsigned, long unsigned>, State::statesNumber>, State::statesNumber> table;
-  bool tableIsValid;
-  void DesolatorModule::updateTable(BWAPI::Unit * unit, const BWAPI::Unitset & myUnits, const BWAPI::Unitset & enemyUnits);
-  bool loadTable(const char * filename);
-  bool saveTable(const char * filename);
-
+  // STATE VARIABLES
+  std::map<int, GameState> gameStates;
+  // STATE METHODS
+  void updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits, bool alsoState = false);
+  
+  // ACTIONS
   void explore(const BWAPI::Unitset & units);
-  void attack(BWAPI::Unit *unit, const BWAPI::Unitset & allies, const BWAPI::Unitset & enemies);
-  State getState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits);
+  BWAPI::PositionOrUnit attack(BWAPI::Unit *unit, const BWAPI::Unitset & allies, const BWAPI::Unitset & enemies);
   BWAPI::Position flee(BWAPI::Unit *unit, const BWAPI::Unitset & friends, const BWAPI::Unitset & enemies);
+
+  // FEEDBACK STUFF
   void evaluateText(std::string text);
   bool feedback;
+
+  // TABLE VARIABLES
+  bool tableIsValid;
+  std::array<std::array<std::pair<long unsigned, long unsigned>, State::statesNumber>, State::statesNumber> table;
+  // TABLE METHODS
+  void updateTable(State, Action, State);
+  bool loadTable(const char * filename);
+  bool saveTable(const char * filename);
 };
 
 /* AUXILLARY FUNCTIONS */
-void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy);
-void drawState(std::map<int, State> *states);
+// BWAPI BOOSTS
 int getActualWeaponRange(BWAPI::Unit *unit);
 bool isMelee(BWAPI::Unit *unit);
 int getOptimizedWeaponRange(BWAPI::Unit *unit);
+// DRAWING FUNCTIONS
+void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy);
+void drawState(std::map<int, GameState> *states);
