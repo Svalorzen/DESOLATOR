@@ -14,8 +14,8 @@ void DesolatorModule::onStart()
   // Hello World!
   Broodwar->sendText("Desolator Module activated!");
 
-  loadTable("test.data");
-  saveTable("test2.data");
+  //loadTable("test.data");
+  //saveTable("test2.data");
 
   // Print the map name.
   // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
@@ -66,6 +66,7 @@ void DesolatorModule::onStart()
     {
       State state = this->getState(*u, &myUnits, &enemyUnits);
       this->states[u->getID()] = state;
+      this->lastPositions[u->getID()] = u->getTilePosition();
     }
     this->feedback = false;
   }
@@ -103,9 +104,6 @@ void DesolatorModule::onFrame()
     return;
   }
 
-  // FOR CAMIEL:
-
-  // This is your change
   auto & myUnits = this->us->getUnits();
   auto & enemyUnits = this->them->getUnits();
 
@@ -120,20 +118,7 @@ void DesolatorModule::onFrame()
   if(enemyUnits.empty())
   {
     // Explore together if no enemies are found and we are not moving.
-    BWAPI::Unitset::iterator u = myUnits.begin();
-
-    if(!u->isMoving())
-    {
-      int x = rand() % (Broodwar->mapWidth());
-      int y = rand() % (Broodwar->mapHeight());
-      BWAPI::TilePosition pos(x, y);
-
-      for (; u != myUnits.end(); u++)
-      {
-        u->move(BWAPI::Position(pos));
-        Broodwar->printf("Explore: (%d, %d)", x, y);
-      }
-    }
+    this->explore(&myUnits);
   } else {
     // Otherwise coordinate units.
     for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
@@ -146,13 +131,12 @@ void DesolatorModule::onFrame()
       // Check when the units moved a tile
       BWAPI::TilePosition previous = this->lastPositions[u->getID()];
       BWAPI::TilePosition current = u->getTilePosition();
-      if (previous != current)
-        Broodwar->printf("Moved from (%d, %d) to (%d, %d)",
-          previous.x,
-          previous.y,
-          current.x,
-          current.y);
 
+      if (u->getOrder() != Orders::AttackUnit)
+        this->attack(*u, &myUnits, &enemyUnits);
+
+      // This should be changed
+      /*
       BWAPI::Unit *enemy = this->findClosestEnemy(*u);
       if(u->isUnderAttack())
       {
@@ -171,8 +155,94 @@ void DesolatorModule::onFrame()
 
       // Update last positions
       this->lastPositions[u->getID()] = u->getTilePosition();
+      */
     } // closure: unit iterator
   } // closure: else
+}
+
+void DesolatorModule::explore(const BWAPI::Unitset *units)
+{
+  /* Lets a group of units explore randomly */
+  BWAPI::Unitset::iterator u = units->begin();
+
+  if(!u->isMoving())
+  {
+    // Only move when idle.
+    int x = rand() % (Broodwar->mapWidth());
+    int y = rand() % (Broodwar->mapHeight());
+    BWAPI::TilePosition pos(x, y);
+
+    units->move(BWAPI::Position(pos));
+    Broodwar->printf("Explore: (%d, %d)", x, y);
+  }
+}
+
+void DesolatorModule::attack(BWAPI::Unit *unit, const BWAPI::Unitset *allies, const BWAPI::Unitset *enemies)
+{
+  /* This function implements the attack action */
+  int realRange = getOptimizedWeaponRange(unit);
+  BWAPI::Unitset &unitsInRange = unit->getUnitsInRadius(realRange);
+  BWAPI::Unitset enemyUnitsInRange = BWAPI::Unitset();
+
+  // Find enemies in range.
+  for(BWAPI::Unitset::iterator u = unitsInRange.begin(); u != unitsInRange.end(); u++)
+    if(enemies->exists(*u))
+      enemyUnitsInRange.push_back(*u);
+
+  if(enemyUnitsInRange.empty())
+  {
+    // No enemy in range move to closest ally that is targeted
+    BWAPI::Unit *closestAlly = nullptr;
+    for(BWAPI::Unitset::iterator ally = allies->begin(); ally != allies->end(); ally++)
+    {
+      State state = this->states[ally->getID()];
+      if((closestAlly == nullptr || unit->getDistance(*ally) < unit->getDistance(closestAlly)) && unit->getID() != ally->getID() && state.enemyHeatMap >= 1)
+      {
+        closestAlly = *ally;
+      }
+    }
+
+    if(closestAlly != nullptr)
+    {
+      // If we have a closest ally that is targeted move towards it.
+      Broodwar->printf("Moving towards closest targeted ally.");
+      unit->move(closestAlly->getPosition());
+    } else {
+      // If our allieds died or are not targeted kill closest enemy.
+      Broodwar->printf("No allieds targeted, attacking closest enemy!");
+      BWAPI::Unit *closestEnemy = nullptr;
+      for(BWAPI::Unitset::iterator enemy = enemies->begin(); enemy != enemies->end(); enemy++)
+      {
+        if(closestEnemy == nullptr || unit->getDistance(*enemy) < unit->getDistance(closestEnemy))
+          closestEnemy = *enemy;
+      }
+      if(closestEnemy != nullptr)
+      {
+        unit->attack(closestEnemy);
+      } else {
+        Broodwar->printf("ERROR: Something is wrong no enemy found in attack function");
+      }
+    }
+    // If no closest ally
+  } else {
+    // Enemy in range
+    Broodwar->printf("Attacking weakest unit in range");
+    BWAPI::Unit *weakestEnemy = nullptr;
+    for(BWAPI::Unitset::iterator enemy = enemyUnitsInRange.begin(); enemy != enemyUnitsInRange.end(); enemy++)
+    {
+      if(weakestEnemy == nullptr || enemy->getHitPoints() + enemy->getShields() < weakestEnemy->getHitPoints() + weakestEnemy->getShields())
+      {
+        weakestEnemy = *enemy;
+      }
+    }
+
+    if(weakestEnemy != nullptr)
+    {
+      unit->attack(weakestEnemy);
+    } else {
+      Broodwar->printf("ERROR: Something went wrong no weakest unit found");
+    }
+  }
 }
 
 void DesolatorModule::flee(BWAPI::Unit *unit)

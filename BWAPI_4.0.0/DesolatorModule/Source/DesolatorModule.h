@@ -49,7 +49,9 @@ private:
   void saveTable(const char * filename);
 
   State getState(BWAPI::Unit *unit, const BWAPI::Unitset *alliedUnits, const BWAPI::Unitset *enemyUnits);
+  void explore(const BWAPI::Unitset *units);
   void flee(BWAPI::Unit *unit);
+  void attack(BWAPI::Unit *unit, const BWAPI::Unitset *allies, const BWAPI::Unitset *enemies);
   void findEnemies(BWAPI::Unitset *enemies);
   void evaluateText(std::string text);
   BWAPI::Unit * findClosestEnemy(BWAPI::Unit *unit);
