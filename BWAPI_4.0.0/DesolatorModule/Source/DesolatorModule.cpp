@@ -100,20 +100,6 @@ void DesolatorModule::onFrame()
   auto & myUnits = this->us->getUnits();
   auto & enemyUnits = this->them->getUnits();
 
-  // Please leave auto 
-
-  // Observe new state
-  for(Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u)
-  {
-    auto newState = this->getState(*u, myUnits, enemyUnits);
-    // Update table
-    table[states[u->getID()]][newState]++;
-
-    this->states[u->getID()] = newState;
-    this->flee(*u, myUnits, enemyUnits);
-  }
-  
-
   if(enemyUnits.empty())
   {
 
@@ -125,15 +111,17 @@ void DesolatorModule::onFrame()
         moved = true;
         this->lastPositions[u->getID()] = u->getTilePosition();
       }
-     
+ 
       if ( !feedback ) {
           this->actions[u->getID()] = Flee;
           if ( this->states[u->getID()].enemyHeatMap == 2 ) {
-            if ( moved || u->getOrder() != Orders::Move )
+            if ( moved || u->getOrder() != Orders::Move ) {
               u->move(flee(*u, myUnits, enemyUnits));
+            }
           }
-          else if ( u->getOrder() != Orders::AttackUnit )
+          else if ( u->getOrder() != Orders::AttackUnit ) {
             u->attack(*(enemyUnits.begin()));
+          }
       }
     } // closure: unit iterator
   } // closure: else
@@ -211,26 +199,6 @@ BWAPI::Position DesolatorModule::flee(BWAPI::Unit *unit, const BWAPI::Unitset & 
   Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
   return placeIwouldLikeToGo;
 }
-
-BWAPI::Unit * DesolatorModule::findClosestEnemy(const BWAPI::Unit *unit, const BWAPI::Unitset & enemies)
-{
-  if(enemies.empty() || !unit)
-    return nullptr;
-
-  BWAPI::Unit *enemy = nullptr;
-  double shortestDistance = -1;
-  for(BWAPI::Unitset::iterator eUnit = enemies.begin(); eUnit != enemies.end(); eUnit++)
-  {    
-    double distance = unit->getDistance(*eUnit);
-    if(shortestDistance == -1 || distance < shortestDistance)
-    {
-      shortestDistance = distance;
-      enemy = *eUnit;
-    }  
-  }
-  return enemy;
-}
-
 
 State DesolatorModule::getState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits)
 {
@@ -354,12 +322,23 @@ int getOptimizedWeaponRange(BWAPI::Unit* unit) {
 // ############# TABLE FUNCTIONS ###############
 // #############################################
 
+void DesolatorModule::updateTable(BWAPI::Unit * u, const BWAPI::Unitset & myUnits, const BWAPI::Unitset & enemyUnits) {
+    auto newState = this->getState(u, myUnits, enemyUnits);
+   
+    if ( this->actions[u->getID()] == Action::Attack ) 
+      table[states[u->getID()]][newState].first++;
+    else
+      table[states[u->getID()]][newState].second++;
+
+    this->states[u->getID()] = newState;
+}
+
 bool DesolatorModule::loadTable(const char * filename) {
   std::ifstream file(filename, std::ifstream::in);
 
   for ( size_t i = 0; i < State::statesNumber; i++ )
     for ( size_t j = 0; j < State::statesNumber; j++ )
-      if ( !(file >> table[i][j]) ) {
+      if ( !(file >> table[i][j].first >> table[i][j].second) ) {
         tableIsValid = false;
         return false;
       }
@@ -374,7 +353,7 @@ bool DesolatorModule::saveTable(const char * filename) {
   int counter = 0;
   for ( size_t i = 0; i < State::statesNumber; i++ ) {
     for ( size_t j = 0; j < State::statesNumber; j++ ) {
-      file << table[i][j] << " ";
+      file << table[i][j].first << " " << table[i][j].second << " ";
     }
     file << "\n";
   }
@@ -472,5 +451,5 @@ void DesolatorModule::onUnitMorph(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
 void DesolatorModule::onEnd(bool isWinner) {
-  //saveTable("transitions_number.data");
+  saveTable("transitions_number_test.data");
 }

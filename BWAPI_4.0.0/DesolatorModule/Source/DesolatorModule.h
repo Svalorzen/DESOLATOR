@@ -44,8 +44,9 @@ private:
   std::map<int, Action> actions;
   std::map<int, BWAPI::TilePosition> lastPositions;
 
-  std::array<std::array<long unsigned, State::statesNumber>, State::statesNumber> table;
+  std::array<std::array<std::pair<long unsigned, long unsigned>, State::statesNumber>, State::statesNumber> table;
   bool tableIsValid;
+  void DesolatorModule::updateTable(BWAPI::Unit * unit, const BWAPI::Unitset & myUnits, const BWAPI::Unitset & enemyUnits);
   bool loadTable(const char * filename);
   bool saveTable(const char * filename);
 
