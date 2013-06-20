@@ -106,16 +106,8 @@ void DesolatorModule::onFrame()
   // FOR CAMIEL:
 
   // This is your change
-  BWAPI::Unitset myUnits = this->us->getUnits();
-  BWAPI::Unitset enemyUnits = this->them->getUnits();
-  
-  // This is what it should have been (so you don't make copies)
-  // const BWAPI::Unitset & myUnits = this->us->getUnits();
-  // const BWAPI::Unitset & enemyUnits = this->them->getUnits();
-  
-  // This is what it was
-  // auto & myUnits = this->us->getUnits();
-  // auto & enemyUnits = this->them->getUnits();
+  auto & myUnits = this->us->getUnits();
+  auto & enemyUnits = this->them->getUnits();
 
   // Please leave auto 
 
@@ -276,13 +268,6 @@ void DesolatorModule::evaluateText(std::string text)
   }
 }
 
-void DesolatorModule::onPlayerLeft(BWAPI::Player* player)
-{
-  // Interact verbally with the other players in the game by
-  // announcing that the other player has left.
-  Broodwar->sendText("Goodbye %s!", player->getName().c_str());
-}
-
 State DesolatorModule::getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, BWAPI::Unitset *enemyUnits)
 {
   /* Returns the current state of the unit */
@@ -334,23 +319,8 @@ State DesolatorModule::getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, 
   return state;
 }
 
-void DesolatorModule::onSaveGame(std::string gameName) {
-  Broodwar << "The game was saved to \"" << gameName << "\"" << std::endl;
-}
 
-void DesolatorModule::onNukeDetect(BWAPI::Position target){}
-void DesolatorModule::onUnitDiscover(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitEvade(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitShow(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitHide(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitCreate(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitDestroy(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitMorph(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
-void DesolatorModule::onEnd(bool isWinner) {}
-
-/* AUXILARY FUNCTIONS */
+/* AUXILLARY FUNCTIONS */
 // Utils functions
 // The range actually takes into consideration unit size, so we try to do that
 int getActualWeaponRange(BWAPI::Unit* unit) {
@@ -450,3 +420,38 @@ void drawState(std::map<int, State> *states)
     position += 10;
   }
 }
+
+
+
+
+
+
+
+// #############################################
+// ############# USELESS STUFF #################
+// #############################################
+
+
+void DesolatorModule::onPlayerLeft(BWAPI::Player* player)
+{
+  // Interact verbally with the other players in the game by
+  // announcing that the other player has left.
+  Broodwar->sendText("Goodbye %s!", player->getName().c_str());
+}
+
+
+void DesolatorModule::onSaveGame(std::string gameName) {
+  Broodwar << "The game was saved to \"" << gameName << "\"" << std::endl;
+}
+
+void DesolatorModule::onNukeDetect(BWAPI::Position target){}
+void DesolatorModule::onUnitDiscover(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitEvade(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitShow(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitHide(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitCreate(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitDestroy(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitMorph(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
+void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
+void DesolatorModule::onEnd(bool isWinner) {}

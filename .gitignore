@@ -13,10 +13,11 @@
 *.a
 
 # Ignore folders
-Starcraft/*
+Starcraft/
 !Starcraft/bwapi-data/bwapi.ini
-!Starcraft/maps/Project\ AI/*
-BWAPI_4.0.0/*
-!BWAPI_4.0.0/DesolatorModule/*
-!BWAPI_4.0.0/TrivialModule/*
+!Starcraft/maps/Project\ AI/
+BWAPI_4.0.0/
+!BWAPI_4.0.0/DesolatorModule/
+!BWAPI_4.0.0/DesolatorModule/Source/
+!BWAPI_4.0.0/TrivialModule/
 
