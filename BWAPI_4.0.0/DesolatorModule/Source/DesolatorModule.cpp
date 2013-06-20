@@ -268,7 +268,7 @@ void DesolatorModule::evaluateText(std::string text)
   }
 }
 
-State DesolatorModule::getState(BWAPI::Unit *unit, BWAPI::Unitset *alliedUnits, BWAPI::Unitset *enemyUnits)
+State DesolatorModule::getState(BWAPI::Unit *unit, const BWAPI::Unitset *alliedUnits, const BWAPI::Unitset *enemyUnits)
 {
   /* Returns the current state of the unit */
   State state = State();
