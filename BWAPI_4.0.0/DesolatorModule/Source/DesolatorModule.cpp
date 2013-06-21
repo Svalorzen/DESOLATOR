@@ -93,6 +93,13 @@ void DesolatorModule::onFrame()
     Broodwar->drawTextScreen(5, 0,  "FPS: %d", Broodwar->getFPS() );
     Broodwar->drawTextScreen(5, 10, "Average FPS: %f", Broodwar->getAverageFPS() );
 
+    auto & regions = Broodwar->getAllRegions();
+    for ( auto it = regions.begin(); it != regions.end(); it++ ) {
+        if ( !it->isAccessible() ){
+            Broodwar->drawBoxMap(Position(it->getBoundsLeft(), it->getBoundsTop()), Position(it->getBoundsRight(), it->getBoundsBottom()), Color(255,255,255));
+        }
+    }
+
     drawHeatMap(this->us, this->them);
     drawState(&this->gameStates);
 
@@ -116,13 +123,15 @@ void DesolatorModule::onFrame()
     /*** DESOLATOR IMPLEMENTATION ***/
     if(enemyUnits.empty())
     {
-        // Explore together if no enemies are found and we are not moving.
-        this->explore(myUnits);
-
-
+        if ( ! feedback )
+            // Explore together if no enemies are found and we are not moving.
+            this->explore(myUnits);
     } else {
         for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
             updateGameState(*u, myUnits, enemyUnits);
+
+        for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
+            flee(*u, myUnits, enemyUnits);
 
         for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
         {
@@ -210,6 +219,8 @@ void DesolatorModule::onFrame()
                 else if ( GS.notMovingTurns == 3 && ( log << "#### USING TRICK TO CONTINUE\n" || true  ) )
                     u->stop();
             } // End, feedback
+            else if ( u->isAttacking() )
+                u->stop();
         } // closure: unit iterator
     } // closure: We have enemies
 }
@@ -294,9 +305,7 @@ BWAPI::Position DesolatorModule::flee(BWAPI::Unit *unit, const BWAPI::Unitset & 
 
     auto unitPos = unit->getPosition();
 
-    
-
-    // We are alone, jump friend code
+    // If we are alone, jump friend code
     if ( GS.nearestAlly != nullptr ) {
         auto friendPos = GS.nearestAlly->getPosition();
         // We are not covered
@@ -316,18 +325,31 @@ BWAPI::Position DesolatorModule::flee(BWAPI::Unit *unit, const BWAPI::Unitset & 
                 ));
         }
     }
-    else
-        Broodwar->printf("No friends!");
 
+    // Enemies code
     for ( auto it = enemies.begin(); it != enemies.end(); it++ ) {
         if ( *it != unit ) {
-            auto enemyPos = (*it)->getPosition();
+            auto enemyPos = it->getPosition();
             auto distance = std::max(minDistance, unitPos.getDistance(enemyPos));
-            auto force = (*it)->getOrderTarget() == unit ? enemyTargetedForce : enemyForce;
+            auto force = it->getOrderTarget() == unit ? enemyTargetedForce : enemyForce;
 
             fieldVectors.emplace_back(std::make_pair(
                 (unitPos.x - enemyPos.x)*force / (distance*distance),
                 (unitPos.y - enemyPos.y)*force / (distance*distance)
+                ));
+        }
+    }
+
+    // Get repulsed by inaccessible regions
+    auto & regions = Broodwar->getAllRegions();
+    for ( auto it = regions.begin(); it != regions.end(); it++ ) {
+        if ( !it->isAccessible() ){
+            auto regionPos = it->getCenter();
+            auto distance = std::max(minDistance, regionPos.getDistance(unit->getPosition()));
+
+            fieldVectors.emplace_back(std::make_pair(
+                (unitPos.x - regionPos.x)*enemyForce / (distance*distance),
+                (unitPos.y - regionPos.y)*enemyForce / (distance*distance)
                 ));
         }
     }
@@ -342,6 +364,13 @@ BWAPI::Position DesolatorModule::flee(BWAPI::Unit *unit, const BWAPI::Unitset & 
     BWAPI::Position placeIwouldLikeToGo = unit->getPosition();
     placeIwouldLikeToGo.x += static_cast<int>(finalVector.first);
     placeIwouldLikeToGo.y += static_cast<int>(finalVector.second);
+
+    // Now we check that were we want to go is in map boundaries, otherwise we fix it ( not perfect but meh )
+    if ( placeIwouldLikeToGo.x < 0 ) placeIwouldLikeToGo.x = 0;
+    else if ( placeIwouldLikeToGo.x > Broodwar->mapWidth() * 32 ) placeIwouldLikeToGo.x = Broodwar->mapWidth() * 32;
+
+    if ( placeIwouldLikeToGo.y < 0 ) placeIwouldLikeToGo.y = 0;
+    else if ( placeIwouldLikeToGo.y > Broodwar->mapHeight() * 32 ) placeIwouldLikeToGo.y = Broodwar->mapHeight() * 32;
 
     Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
 
