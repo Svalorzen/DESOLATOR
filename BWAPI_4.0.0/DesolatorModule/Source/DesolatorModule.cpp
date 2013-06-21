@@ -17,6 +17,16 @@ void DesolatorModule::onStart()
     // Hello World!
     Broodwar->sendText("Desolator Module activated!");
 
+    for ( size_t i = 0; i < table.size(); i++ )
+        for (size_t j = 0; j < table[0].size(); j++ ) {
+            std::get<0>(table[i][j]) = 0;
+            std::get<0>(table[i][j]) = 0;
+            std::get<0>(table[i][j]) = 0;
+            std::get<0>(table[i][j]) = 0;
+        }
+
+    saveTable("transition_numbers.data");
+
     if ( !loadTable("transitions_numbers.data") )
         Broodwar->printf("###! COULD NOT LOAD TRANSITION NUMBERS !###");
 
@@ -91,26 +101,26 @@ void DesolatorModule::onFrame()
 {
     /*** STANDARD IMPLEMENTATION ***/
     // Display the game frame rate as text in the upper left area of the screen
-    Broodwar->drawTextScreen(5, 0,  "FPS: %d", Broodwar->getFPS() );
-    Broodwar->drawTextScreen(5, 10, "Average FPS: %f", Broodwar->getAverageFPS() );
+    // Broodwar->drawTextScreen(5, 0,  "FPS: %d", Broodwar->getFPS() );
+    // Broodwar->drawTextScreen(5, 10, "Average FPS: %f", Broodwar->getAverageFPS() );
 
-    auto & regions = Broodwar->getAllRegions();
-    for ( auto it = regions.begin(); it != regions.end(); it++ ) {
-        if ( !it->isAccessible() ){
-            Broodwar->drawBoxMap(Position(it->getBoundsLeft(), it->getBoundsTop()), Position(it->getBoundsRight(), it->getBoundsBottom()), Color(255,255,255));
-        }
-    }
+    //auto & regions = Broodwar->getAllRegions();
+    //for ( auto it = regions.begin(); it != regions.end(); it++ ) {
+    ///    if ( !it->isAccessible() ){
+    //        Broodwar->drawBoxMap(Position(it->getBoundsLeft(), it->getBoundsTop()), Position(it->getBoundsRight(), it->getBoundsBottom()), Color(255,255,255));
+    //    }
+    //}
 
-    drawHeatMap(this->us, this->them);
-    drawState(&this->gameStates);
+    //drawHeatMap(this->us, this->them);
+    //drawState(&this->gameStates);
 
     auto & myUnits = this->us->getUnits();
     auto & enemyUnits = this->them->getUnits();
 
-    for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u ) {
-        auto p = u->getPosition(); p.y -= 30;
-        Broodwar->drawTextMap(p, "%d", u->getID());
-    }
+    //for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u ) {
+    //    auto p = u->getPosition(); p.y -= 30;
+    //    Broodwar->drawTextMap(p, "%d", u->getID());
+    //}
 
     // Return if the game is a replay or is paused
     if ( Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self() )
@@ -130,9 +140,6 @@ void DesolatorModule::onFrame()
     } else {
         for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
             updateGameState(*u, myUnits, enemyUnits);
-
-        for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
-            flee(*u, myUnits, enemyUnits);
 
         for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
         {
@@ -177,14 +184,14 @@ void DesolatorModule::onFrame()
                     if ( random ) {
                         auto position = flee(*u, myUnits, enemyUnits);
                         if ( convertToTile(position) != u->getTilePosition() )
-                            if ( ! u->move(position) ) Broodwar->printf("CANT FLEE!!!!!!!!");
+                            if ( ! u->move(position) ) ; //Broodwar->printf("CANT FLEE!!!!!!!!");
                         
                         a = Action::Flee;
                         actual = ActualAction::Move;
 
                         // DEBUG
-                        Broodwar->printf("%d - Flee", u->getID());
-                        log << u->getID() << " - Flee\n";
+                        //Broodwar->printf("%d - Flee", u->getID());
+                        //log << u->getID() << " - Flee\n";
                     }
                     else {
                         auto target = attack(*u, myUnits, enemyUnits);
@@ -194,25 +201,25 @@ void DesolatorModule::onFrame()
 
                         if ( target.isPosition() ) {
                             if ( convertToTile(target.getPosition()) != u->getTilePosition() )
-                                if ( ! u->move(target.getPosition())) Broodwar->printf("CANT MOVE TO ATTACK!!!!!!!!");
+                                if ( ! u->move(target.getPosition()));// Broodwar->printf("CANT MOVE TO ATTACK!!!!!!!!");
 
                             actual = ActualAction::Move;
 
                             // DEBUG
-                            Broodwar->printf("%d - Moving to Attack", u->getID());
-                            log << u->getID() << " - Moving to Attack\n";
-                            if ( convertToTile(target.getPosition()) == u->getTilePosition() ) log << "#### Moving to same spot...\n";
+                            //Broodwar->printf("%d - Moving to Attack", u->getID());
+                            //log << u->getID() << " - Moving to Attack\n";
+                            //if ( convertToTile(target.getPosition()) == u->getTilePosition() ) log << "#### Moving to same spot...\n";
                         }
                         // This check is to avoid breaking Starcraft when we spam attack coomand
                         else if ( u->getOrder() != Orders::AttackUnit || gameStates[u->getID()].lastTarget != target.getUnit() ) {
-                            if ( ! u->attack(target.getUnit())) Broodwar->printf("CANT ATTACK!!!!!!!!");
+                            if ( ! u->attack(target.getUnit()));// Broodwar->printf("CANT ATTACK!!!!!!!!");
 
                             gameStates[u->getID()].isStartingAttack = true;
                             gameStates[u->getID()].lastTarget = target.getUnit();
 
                             // DEBUG
-                            Broodwar->printf("%d - Attacking Target", u->getID());
-                            log << u->getID() << " Attacking Target\n";
+                            //Broodwar->printf("%d - Attacking Target", u->getID());
+                            //log << u->getID() << " Attacking Target\n";
                         }
                     }
                     // Update Action taken
@@ -221,7 +228,7 @@ void DesolatorModule::onFrame()
 
                 } // End, personal tick
                 // End of hack, here we stop the units so I guess internally it resets so we can move it again.
-                else if ( GS.notMovingTurns == 3 && ( log << "#### USING TRICK TO CONTINUE\n" || true  ) )
+                else if ( GS.notMovingTurns == 3 )
                     u->stop();
             } // End, feedback
             else if ( u->isAttacking() )
@@ -244,7 +251,7 @@ void DesolatorModule::explore(const BWAPI::Unitset & units)
 
         units.move(pos);
 
-        Broodwar->printf("Explore: (%d, %d)", x, y);
+        //Broodwar->printf("Explore: (%d, %d)", x, y);
     }
 }
 
@@ -257,7 +264,7 @@ BWAPI::PositionOrUnit DesolatorModule::attack(BWAPI::Unit *unit, const BWAPI::Un
         // No enemy in range move to closest ally that is targeted
         if ( GS.nearestAttackedAlly != nullptr )
         {
-            Broodwar->printf("There is an attacked ally");
+            //Broodwar->printf("There is an attacked ally");
             // If we have a closest ally that is targeted move towards it.
             return GS.nearestAttackedAlly->getPosition();
         } else {
@@ -265,8 +272,8 @@ BWAPI::PositionOrUnit DesolatorModule::attack(BWAPI::Unit *unit, const BWAPI::Un
             if ( GS.nearestEnemy != nullptr )
                 return GS.nearestEnemy;
             else {
-                Broodwar->printf("ERROR: No enemy to attack in attack function");
-                log << "ERROR: No enemy in range with canTarget true\n";
+                //Broodwar->printf("ERROR: No enemy to attack in attack function");
+                //log << "ERROR: No enemy in range with canTarget true\n";
                 return unit->getPosition();
             }
         }
@@ -286,8 +293,8 @@ BWAPI::PositionOrUnit DesolatorModule::attack(BWAPI::Unit *unit, const BWAPI::Un
         if ( weakestEnemy != nullptr )
             return weakestEnemy;
         else {
-            Broodwar->printf("ERROR: No enemy in range with canTarget true");
-            log << "ERROR: No enemy in range with canTarget true\n";
+            //Broodwar->printf("ERROR: No enemy in range with canTarget true");
+            //log << "ERROR: No enemy in range with canTarget true\n";
             return GS.nearestEnemy;
         }
     }
@@ -377,7 +384,7 @@ BWAPI::Position DesolatorModule::flee(BWAPI::Unit *unit, const BWAPI::Unitset & 
     if ( placeIwouldLikeToGo.y < 0 ) placeIwouldLikeToGo.y = 0;
     else if ( placeIwouldLikeToGo.y > Broodwar->mapHeight() * 32 ) placeIwouldLikeToGo.y = Broodwar->mapHeight() * 32;
 
-    Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
+   // Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
 
     return placeIwouldLikeToGo;
 }
