@@ -11,7 +11,7 @@ void DesolatorModule::onStart()
 {
     log.open("log.txt");
     // COMMON VARIABLE INIT
-    tableIsValid = false;
+    tableIsValid = true;
 
     /*** STANDARD IMPLEMENTATION ***/
     // Hello World!
@@ -169,12 +169,12 @@ void DesolatorModule::onFrame()
                     Action a;
                     ActualAction actual;
 
-                    //int random = rand() % 2;
+                    int random = rand() % 2;
 
                     // Game logic....
                     
-                    if ( gameStates[u->getID()].state.enemyHeatMap == 2 ) {
-                    //if ( random ) {
+                    //if ( gameStates[u->getID()].state.enemyHeatMap == 2 ) {
+                    if ( random ) {
                         auto position = flee(*u, myUnits, enemyUnits);
                         if ( convertToTile(position) != u->getTilePosition() )
                             if ( ! u->move(position) ) Broodwar->printf("CANT FLEE!!!!!!!!");
@@ -489,7 +489,7 @@ bool DesolatorModule::loadTable(const char * filename) {
 }
 
 bool DesolatorModule::saveTable(const char * filename) {
-    //if ( !tableIsValid ) return false;
+    if ( !tableIsValid ) return false;
     std::ofstream file(filename, std::ofstream::out);
     int counter = 0;
     for ( size_t i = 0; i < State::statesNumber; i++ ) {
@@ -592,7 +592,8 @@ void DesolatorModule::onUnitMorph(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
 void DesolatorModule::onEnd(bool isWinner) {
-    saveTable("transitions_numbers.data");
+    if ( !saveTable("transitions_numbers.data") )
+        log << "NOT FUCKING SAVED\n";
     log.close();
 }
 
