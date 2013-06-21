@@ -33,6 +33,7 @@ void DesolatorModule::onStart()
     // Set the command optimization level so that common commands can be grouped
     // and reduce the bot's APM (Actions Per Minute).
     Broodwar->setCommandOptimizationLevel(2);
+    Broodwar->setLocalSpeed(0);
 
     // Check if this is a replay
     if ( Broodwar->isReplay() )
@@ -60,7 +61,6 @@ void DesolatorModule::onStart()
         /*** DESOLATOR IMPLEMENTATION ***/
         this->us = Broodwar->self();
         this->them = Broodwar->enemy();
-        Broodwar->setLocalSpeed(50);
 
         BWAPI::Unitset myUnits = this->us->getUnits();
         BWAPI::Unitset enemyUnits = this->them->getUnits();
@@ -70,6 +70,7 @@ void DesolatorModule::onStart()
         {
             GameState gameState;
             // Saved states
+            gameState.lastHealth = u->getHitPoints() + u->getShields();
             gameState.lastPosition = u->getTilePosition();
             gameState.lastPerfectPosition = u->getPosition();
             gameState.notMovingTurns = 0;
@@ -159,8 +160,12 @@ void DesolatorModule::onFrame()
                     Action a;
                     ActualAction actual;
 
+                    //int random = rand() % 2;
+
                     // Game logic....
+                    
                     if ( gameStates[u->getID()].state.enemyHeatMap == 2 ) {
+                    //if ( random ) {
                         auto position = flee(*u, myUnits, enemyUnits);
                         if ( convertToTile(position) != u->getTilePosition() )
                             if ( ! u->move(position) ) Broodwar->printf("CANT FLEE!!!!!!!!");
@@ -431,33 +436,36 @@ BWAPI::TilePosition convertToTile(BWAPI::Position point) {
 // #############################################
 
 void DesolatorModule::updateTable(State before, Action a, State after, double reward) {
-    if ( a == Action::Attack ) 
-        table[before][after].first++;
-    else
-        table[before][after].second++;
+    if ( a == Action::Attack ) {
+        std::get<0>(table[before][after])++;
+        std::get<2>(table[before][after]) += reward;
+    }
+    else {
+        std::get<1>(table[before][after])++;
+        std::get<3>(table[before][after]) += reward;
+    }
 }
-
 bool DesolatorModule::loadTable(const char * filename) {
     std::ifstream file(filename, std::ifstream::in);
 
     for ( size_t i = 0; i < State::statesNumber; i++ )
         for ( size_t j = 0; j < State::statesNumber; j++ )
-            if ( !(file >> table[i][j].first >> table[i][j].second) ) {
+            if ( !(file >> std::get<0>(table[i][j]) >> std::get<1>(table[i][j]) >> std::get<2>(table[i][j]) >> std::get<3>(table[i][j]) ) ) {
                 tableIsValid = false;
                 return false;
             }
-            // Should we verify the data in some way?
-            file.close();
-            return true;
+    // Should we verify the data in some way?
+    file.close();
+    return true;
 }
 
 bool DesolatorModule::saveTable(const char * filename) {
-    if ( !tableIsValid ) return false;
+    //if ( !tableIsValid ) return false;
     std::ofstream file(filename, std::ofstream::out);
     int counter = 0;
     for ( size_t i = 0; i < State::statesNumber; i++ ) {
         for ( size_t j = 0; j < State::statesNumber; j++ ) {
-            file << table[i][j].first << " " << table[i][j].second << " ";
+            file << std::get<0>(table[i][j]) << " " << std::get<1>(table[i][j]) << " " << std::get<2>(table[i][j]) << " " << std::get<3>(table[i][j]) << " ";
         }
         file << "\n";
     }
@@ -551,13 +559,21 @@ void DesolatorModule::onUnitEvade(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitShow(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitHide(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitCreate(BWAPI::Unit* unit){}
-void DesolatorModule::onUnitDestroy(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitMorph(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
 void DesolatorModule::onEnd(bool isWinner) {
-    //saveTable("transitions_number.data");
+    saveTable("transitions_numbers.data");
     log.close();
+}
+
+void DesolatorModule::onUnitDestroy(BWAPI::Unit* unit) {
+    if(unit->getPlayer() == this->us) {
+        auto GS = this->gameStates[unit->getID()];
+        int health =  unit->getType().maxShields() + unit->getType().maxHitPoints();
+        double reward = - ( static_cast<double>(health)/ 4 );
+        updateTable(GS.state, GS.lastAction, GS.state, reward);
+    }
 }
 
 void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits, bool alsoState) {
@@ -641,7 +657,17 @@ void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & 
 
     // State and Table updating
     if ( alsoState ) {
-        updateTable(oldGameState.state, oldGameState.lastAction, newState);
+        int currentHealth = unit->getHitPoints() + unit->getShields();
+        double reward = currentHealth - oldGameState.lastHealth;
+        if(oldGameState.actualAction == ActualAction::Shoot && ! oldGameState.isStartingAttack &&  ! unit->isAttackFrame())
+        {
+            reward += unit->getType().groundWeapon().damageAmount();
+        }
+//        if(currentHealth - oldGameState.lastHealth < 0)
+//            Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d", unit->getID(), reward, oldGameState.lastHealth, currentHealth);
+
+        updateTable(oldGameState.state, oldGameState.lastAction, newState, reward);
+        oldGameState.lastHealth = currentHealth;
         oldGameState.state = newState;
     }
 }

@@ -51,7 +51,7 @@ private:
 
   // TABLE VARIABLES
   bool tableIsValid;
-  std::array<std::array<std::pair<long unsigned, long unsigned>, State::statesNumber>, State::statesNumber> table;
+  std::array<std::array<std::tuple<long unsigned, long unsigned, double, double>, State::statesNumber>, State::statesNumber> table;
   // TABLE METHODS
   void updateTable(State, Action, State, double reward = 0.0);
   bool loadTable(const char * filename);

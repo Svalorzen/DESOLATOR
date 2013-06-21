@@ -24,6 +24,7 @@ public:
   Action lastAction;
   ActualAction actualAction;
   
+  int lastHealth;
   BWAPI::TilePosition lastPosition;
   BWAPI::Unit * lastTarget;
   BWAPI::Unit * nearestEnemy;
