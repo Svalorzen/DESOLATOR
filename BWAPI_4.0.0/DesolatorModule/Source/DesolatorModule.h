@@ -3,6 +3,7 @@
 #include <map>
 #include <array>
 #include <time.h>
+#include <fstream>
 
 #include "gameState.h"
 
@@ -52,9 +53,11 @@ private:
   bool tableIsValid;
   std::array<std::array<std::pair<long unsigned, long unsigned>, State::statesNumber>, State::statesNumber> table;
   // TABLE METHODS
-  void updateTable(State, Action, State);
+  void updateTable(State, Action, State, double reward = 0.0);
   bool loadTable(const char * filename);
   bool saveTable(const char * filename);
+
+  std::ofstream log;
 };
 
 /* AUXILLARY FUNCTIONS */
@@ -62,6 +65,7 @@ private:
 int getActualWeaponRange(BWAPI::Unit *unit);
 bool isMelee(BWAPI::Unit *unit);
 int getOptimizedWeaponRange(BWAPI::Unit *unit);
+BWAPI::TilePosition convertToTile(BWAPI::Position);
 // DRAWING FUNCTIONS
 void drawHeatMap(BWAPI::Player *us, BWAPI::Player *enemy);
 void drawState(std::map<int, GameState> *states);

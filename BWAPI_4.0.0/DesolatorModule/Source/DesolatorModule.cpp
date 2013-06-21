@@ -1,5 +1,4 @@
 #include "DesolatorModule.h"
-#include <fstream>
 #include <cmath>
 #include <algorithm>
 
@@ -10,6 +9,7 @@ const int STANDARD_SPEED_FPS = 19;
 
 void DesolatorModule::onStart()
 {
+    log.open("log.txt");
     // COMMON VARIABLE INIT
     tableIsValid = false;
 
@@ -71,6 +71,8 @@ void DesolatorModule::onStart()
             GameState gameState;
             // Saved states
             gameState.lastPosition = u->getTilePosition();
+            gameState.lastPerfectPosition = u->getPosition();
+            gameState.notMovingTurns = 0;
             gameState.isStartingAttack = false;
             // Saved units
             gameState.lastTarget = nullptr;
@@ -94,6 +96,14 @@ void DesolatorModule::onFrame()
     drawHeatMap(this->us, this->them);
     drawState(&this->gameStates);
 
+    auto & myUnits = this->us->getUnits();
+    auto & enemyUnits = this->them->getUnits();
+
+    for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u ) {
+        auto p = u->getPosition(); p.y -= 30;
+        Broodwar->drawTextMap(p, "%d", u->getID());
+    }
+
     // Return if the game is a replay or is paused
     if ( Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self() )
         return;
@@ -104,9 +114,6 @@ void DesolatorModule::onFrame()
         return;
 
     /*** DESOLATOR IMPLEMENTATION ***/
-    auto & myUnits = this->us->getUnits();
-    auto & enemyUnits = this->them->getUnits();
-
     if(enemyUnits.empty())
     {
         // Explore together if no enemies are found and we are not moving.
@@ -119,58 +126,89 @@ void DesolatorModule::onFrame()
 
         for ( BWAPI::Unitset::iterator u = myUnits.begin(); u != myUnits.end(); ++u )
         {
-            // Check when the units moved a tile
-            BWAPI::TilePosition & previous = this->gameStates[u->getID()].lastPosition;
-            BWAPI::TilePosition & current = u->getTilePosition();
+            auto & GS = gameStates[u->getID()];
 
+            // Check when the units moved a tile
             bool moved = false;
-            if ( previous != current ) {
-                moved = true;
-                previous = current;
+            {
+                BWAPI::TilePosition & previous = GS.lastPosition;
+                BWAPI::TilePosition current = u->getTilePosition();
+
+                if ( previous != current ) {
+                    moved = true;
+                    previous = current;
+                }
+            }
+            // Hack for avoiding units stopping while actually moving..
+            if ( !moved && GS.actualAction == ActualAction::Move && GS.lastPerfectPosition == u->getPosition() )
+                GS.notMovingTurns++;
+            else {
+                GS.lastPerfectPosition = u->getPosition();
+                GS.notMovingTurns = 0;
             }
 
             // If no feedback, we can act
             if ( !feedback ) {
                 // If our personal tick ended
-                // TODO: The ticks for the attack thing don't work, we need to wait for moved if we moved, otherwise we need to wait for a new attack tick.
-                if ( moved || ( gameStates[u->getID()].actualAction == Action::Attack && ! gameStates[u->getID()].isStartingAttack &&  ! u->isAttackFrame() ) ) {
+                // FIXME: Sometimes it does not move..
+                if ( u->isIdle() || moved || 
+                    ( GS.actualAction == ActualAction::Shoot && ! GS.isStartingAttack &&  ! u->isAttackFrame() ) ) {
+
                     updateGameState(*u, myUnits, enemyUnits, true);
 
-                    Action a, actual;
+                    Action a;
+                    ActualAction actual;
 
                     // Game logic....
                     if ( gameStates[u->getID()].state.enemyHeatMap == 2 ) {
                         auto position = flee(*u, myUnits, enemyUnits);
-                        u->move(position);
+                        if ( convertToTile(position) != u->getTilePosition() )
+                            if ( ! u->move(position) ) Broodwar->printf("CANT FLEE!!!!!!!!");
                         
                         a = Action::Flee;
-                        actual = Action::Move;
+                        actual = ActualAction::Move;
+
+                        // DEBUG
                         Broodwar->printf("%d - Flee", u->getID());
+                        log << u->getID() << " - Flee\n";
                     }
                     else {
                         auto target = attack(*u, myUnits, enemyUnits);
+
+                        actual = ActualAction::Shoot;
+                        a = Action::Attack;
+
                         if ( target.isPosition() ) {
-                            u->move(target.getPosition());
-                            actual = Action::Move;
+                            if ( convertToTile(target.getPosition()) != u->getTilePosition() )
+                                if ( ! u->move(target.getPosition())) Broodwar->printf("CANT MOVE TO ATTACK!!!!!!!!");
+
+                            actual = ActualAction::Move;
+
+                            // DEBUG
+                            Broodwar->printf("%d - Moving to Attack", u->getID());
+                            log << u->getID() << " - Moving to Attack\n";
+                            if ( convertToTile(target.getPosition()) == u->getTilePosition() ) log << "#### Moving to same spot...\n";
                         }
                         // This check is to avoid breaking Starcraft when we spam attack coomand
                         else if ( u->getOrder() != Orders::AttackUnit || gameStates[u->getID()].lastTarget != target.getUnit() ) {
-                            u->attack(target.getUnit());
+                            if ( ! u->attack(target.getUnit())) Broodwar->printf("CANT ATTACK!!!!!!!!");
 
                             gameStates[u->getID()].isStartingAttack = true;
                             gameStates[u->getID()].lastTarget = target.getUnit();
-                            actual = Action::Attack;
+
+                            // DEBUG
+                            Broodwar->printf("%d - Attacking Target", u->getID());
+                            log << u->getID() << " Attacking Target\n";
                         }
-                        else
-                            actual = Action::Attack;
-                        a = Action::Attack;
-                        Broodwar->printf("%d - Attack", u->getID());
                     }
                     // Update Action taken
                     gameStates[u->getID()].lastAction = a;
                     gameStates[u->getID()].actualAction = actual;
 
                 } // End, personal tick
+                // End of hack, here we stop the units so I guess internally it resets so we can move it again.
+                else if ( GS.notMovingTurns == 3 && ( log << "#### USING TRICK TO CONTINUE\n" || true  ) )
+                    u->stop();
             } // End, feedback
         } // closure: unit iterator
     } // closure: We have enemies
@@ -184,11 +222,12 @@ void DesolatorModule::explore(const BWAPI::Unitset & units)
     if(!u->isMoving())
     {
         // Only move when idle.
-        int x = rand() % (Broodwar->mapWidth());
-        int y = rand() % (Broodwar->mapHeight());
-        BWAPI::TilePosition pos(x, y);
+        int x = ( rand() % (Broodwar->mapWidth()) ) * 32;
+        int y = ( rand() % (Broodwar->mapHeight()) ) * 32;
+        BWAPI::Position pos(x, y);
 
-        units.move(BWAPI::Position(pos));
+        units.move(pos);
+
         Broodwar->printf("Explore: (%d, %d)", x, y);
     }
 }
@@ -202,14 +241,18 @@ BWAPI::PositionOrUnit DesolatorModule::attack(BWAPI::Unit *unit, const BWAPI::Un
         // No enemy in range move to closest ally that is targeted
         if ( GS.nearestAttackedAlly != nullptr )
         {
+            Broodwar->printf("There is an attacked ally");
             // If we have a closest ally that is targeted move towards it.
             return GS.nearestAttackedAlly->getPosition();
         } else {
             // If our allieds died or are not targeted kill closest enemy.
             if ( GS.nearestEnemy != nullptr )
                 return GS.nearestEnemy;
-            else
+            else {
                 Broodwar->printf("ERROR: No enemy to attack in attack function");
+                log << "ERROR: No enemy in range with canTarget true\n";
+                return unit->getPosition();
+            }
         }
     } else {  
         BWAPI::Unit *weakestEnemy = nullptr;
@@ -228,6 +271,7 @@ BWAPI::PositionOrUnit DesolatorModule::attack(BWAPI::Unit *unit, const BWAPI::Un
             return weakestEnemy;
         else {
             Broodwar->printf("ERROR: No enemy in range with canTarget true");
+            log << "ERROR: No enemy in range with canTarget true\n";
             return GS.nearestEnemy;
         }
     }
@@ -331,6 +375,12 @@ void DesolatorModule::evaluateText(std::string text)
         this->feedback = true;
         return;
     }
+    else if ( text == "q" ) {
+        Broodwar->leaveGame();
+    }
+    else if ( text == "d" ) {
+        Broodwar->restartGame();
+    }
     else if(this->feedback)
     {
         try
@@ -371,11 +421,16 @@ int getOptimizedWeaponRange(BWAPI::Unit* unit) {
         return getActualWeaponRange(unit);
 }
 
+BWAPI::TilePosition convertToTile(BWAPI::Position point) {
+    return TilePosition( Position(abs(point.x - 32 / 2),
+                                  abs(point.y - 32 / 2)) );
+  }
+
 // #############################################
 // ############# TABLE FUNCTIONS ###############
 // #############################################
 
-void DesolatorModule::updateTable(State before, Action a, State after) {
+void DesolatorModule::updateTable(State before, Action a, State after, double reward) {
     if ( a == Action::Attack ) 
         table[before][after].first++;
     else
@@ -502,6 +557,7 @@ void DesolatorModule::onUnitRenegade(BWAPI::Unit* unit){}
 void DesolatorModule::onUnitComplete(BWAPI::Unit *unit){}
 void DesolatorModule::onEnd(bool isWinner) {
     //saveTable("transitions_number.data");
+    log.close();
 }
 
 void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits, bool alsoState) {
@@ -566,7 +622,7 @@ void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & 
                 nearestAlly = *it;
 
             // Find nearest Attacked Ally
-            if ( gameStates[it->getID()].nearestEnemy && ( nearestAttackedAlly == nullptr || nearestAttackedAlly->getDistance(unit) > it->getDistance(unit) ) )
+            if ( gameStates[it->getID()].state.enemyHeatMap == 2 && ( nearestAttackedAlly == nullptr || nearestAttackedAlly->getDistance(unit) > it->getDistance(unit) ) )
                 nearestAttackedAlly = *it;
 
             if ( alsoState && !newState.friendHeatMap ) {
