@@ -17,16 +17,6 @@ void DesolatorModule::onStart()
     // Hello World!
     Broodwar->sendText("Desolator Module activated!");
 
-    for ( size_t i = 0; i < table.size(); i++ )
-        for (size_t j = 0; j < table[0].size(); j++ ) {
-            std::get<0>(table[i][j]) = 0;
-            std::get<0>(table[i][j]) = 0;
-            std::get<0>(table[i][j]) = 0;
-            std::get<0>(table[i][j]) = 0;
-        }
-
-    saveTable("transition_numbers.data");
-
     if ( !loadTable("transitions_numbers.data") )
         Broodwar->printf("###! COULD NOT LOAD TRANSITION NUMBERS !###");
 
