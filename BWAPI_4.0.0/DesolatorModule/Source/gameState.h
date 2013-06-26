@@ -23,6 +23,7 @@ public:
   bool isStartingAttack;
   Action lastAction;
   ActualAction actualAction;
+  bool shooted;
   
   int lastHealth;
   BWAPI::TilePosition lastPosition;

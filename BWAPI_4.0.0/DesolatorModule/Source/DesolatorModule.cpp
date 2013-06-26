@@ -1,6 +1,7 @@
 #include "DesolatorModule.h"
 #include <cmath>
 #include <algorithm>
+#include <ctime>
 
 using namespace BWAPI;
 using namespace Filter;
@@ -12,13 +13,22 @@ void DesolatorModule::onStart()
     log.open("log.txt");
     // COMMON VARIABLE INIT
     tableIsValid = true;
+    policyIsValid = false;
+
+    // Init random number generator
+    srand(time(NULL));
 
     /*** STANDARD IMPLEMENTATION ***/
     // Hello World!
     Broodwar->sendText("Desolator Module activated!");
 
-    if ( !loadTable("transitions_numbers.data") )
+    if ( !loadTable("transitions_numbers.data") ) {
         Broodwar->printf("###! COULD NOT LOAD TRANSITION NUMBERS !###");
+        initTable();
+    }
+
+    if ( !loadPolicy("policy.data"))
+        Broodwar->printf("###! COULD NOT LOAD POLICY !###");
 
     // Print the map name.
     // BWAPI returns std::string when retrieving a string, don't forget to add .c_str() when printing!
@@ -33,7 +43,10 @@ void DesolatorModule::onStart()
     // Set the command optimization level so that common commands can be grouped
     // and reduce the bot's APM (Actions Per Minute).
     Broodwar->setCommandOptimizationLevel(2);
-    Broodwar->setLocalSpeed(0);
+    if ( policyIsValid )
+        Broodwar->setLocalSpeed(50);
+    else
+        Broodwar->setLocalSpeed(0);
 
     // Check if this is a replay
     if ( Broodwar->isReplay() )
@@ -75,6 +88,7 @@ void DesolatorModule::onStart()
             gameState.lastPerfectPosition = u->getPosition();
             gameState.notMovingTurns = 0;
             gameState.isStartingAttack = false;
+            gameState.shooted = false;
             // Saved units
             gameState.lastTarget = nullptr;
             gameState.nearestAttackedAlly = nullptr;
@@ -155,7 +169,7 @@ void DesolatorModule::onFrame()
             }
 
             // If no feedback, we can act
-            if ( !feedback ) {
+      //      if ( !feedback ) {
                 // If our personal tick ended
                 // FIXME: Sometimes it does not move..
                 if ( u->isIdle() || moved || 
@@ -166,12 +180,19 @@ void DesolatorModule::onFrame()
                     Action a;
                     ActualAction actual;
 
-                    int random = rand() % 2;
+                    int selAction = 0;
+                    if ( policyIsValid ) {
+                        selAction = policy[GS.state];
+                    }
+                    else {
+                        selAction = rand() % 2;
+                    }
 
                     // Game logic....
                     
-                    //if ( gameStates[u->getID()].state.enemyHeatMap == 2 ) {
-                    if ( random ) {
+                    // if ( gameStates[u->getID()].state.enemyHeatMap == 2 ) {
+                    
+                    if ( selAction == 1 ) {
                         auto position = flee(*u, myUnits, enemyUnits);
                         if ( convertToTile(position) != u->getTilePosition() )
                             if ( ! u->move(position) ) ; //Broodwar->printf("CANT FLEE!!!!!!!!");
@@ -220,9 +241,9 @@ void DesolatorModule::onFrame()
                 // End of hack, here we stop the units so I guess internally it resets so we can move it again.
                 else if ( GS.notMovingTurns == 3 )
                     u->stop();
-            } // End, feedback
-            else if ( u->isAttacking() )
-                u->stop();
+       //     } // End, feedback
+       //     else if ( u->isAttacking() )
+       //         u->stop();
         } // closure: unit iterator
     } // closure: We have enemies
 }
@@ -402,8 +423,12 @@ void DesolatorModule::evaluateText(std::string text)
 {
     if(text == "r")
     {
-        Broodwar << "Game paused for feedback.";
-        this->feedback = true;
+        this->feedback = !feedback;
+
+         if ( feedback )
+        Broodwar->setLocalSpeed(50);
+    else
+        Broodwar->setLocalSpeed(0);
         return;
     }
     else if ( text == "q" ) {
@@ -460,6 +485,13 @@ BWAPI::TilePosition convertToTile(BWAPI::Position point) {
 // #############################################
 // ############# TABLE FUNCTIONS ###############
 // #############################################
+void DesolatorModule::initTable() {
+    for ( size_t i = 0; i < State::statesNumber; i++ )
+        for ( size_t j = 0; j < State::statesNumber; j++ )
+            std::get<0>(table[i][j]) = std::get<1>(table[i][j]) = std::get<2>(table[i][j]) = std::get<3>(table[i][j]) = 0;
+
+    tableIsValid = true;
+}
 
 void DesolatorModule::updateTable(State before, Action a, State after, double reward) {
     if ( a == Action::Attack ) {
@@ -592,13 +624,14 @@ void DesolatorModule::onEnd(bool isWinner) {
     if ( !saveTable("transitions_numbers.data") )
         log << "NOT FUCKING SAVED\n";
     log.close();
+    Broodwar->restartGame();
 }
 
 void DesolatorModule::onUnitDestroy(BWAPI::Unit* unit) {
     if(unit->getPlayer() == this->us) {
         auto GS = this->gameStates[unit->getID()];
         int health =  unit->getType().maxShields() + unit->getType().maxHitPoints();
-        double reward = - ( static_cast<double>(health)/ 4 );
+        double reward = - ( static_cast<double>(health)/2 );
         updateTable(GS.state, GS.lastAction, GS.state, reward);
     }
 }
@@ -622,6 +655,7 @@ void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & 
     // Is the attack tick done?
     if ( oldGameState.isStartingAttack && unit->isAttackFrame() ) {
         oldGameState.isStartingAttack = false;
+        oldGameState.shooted = true;
     }
 
     // Last Position - WE DON'T HAVE TO DO THIS
@@ -686,15 +720,32 @@ void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & 
     if ( alsoState ) {
         int currentHealth = unit->getHitPoints() + unit->getShields();
         double reward = currentHealth - oldGameState.lastHealth;
-        if(oldGameState.actualAction == ActualAction::Shoot && ! oldGameState.isStartingAttack &&  ! unit->isAttackFrame())
+        // If we actually shoot (not only attacked), this should happen only 1 time
+        if(oldGameState.shooted )
         {
-            reward += unit->getType().groundWeapon().damageAmount();
+            reward += unit->getType().groundWeapon().damageAmount() / 2;
+            oldGameState.shooted = false;
         }
-//        if(currentHealth - oldGameState.lastHealth < 0)
-//            Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d", unit->getID(), reward, oldGameState.lastHealth, currentHealth);
+        if(this->feedback && reward != 0 )
+            Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d", unit->getID(), reward, oldGameState.lastHealth, currentHealth);
 
         updateTable(oldGameState.state, oldGameState.lastAction, newState, reward);
         oldGameState.lastHealth = currentHealth;
         oldGameState.state = newState;
     }
+}
+
+bool DesolatorModule::loadPolicy(const char * filename) {
+    std::ifstream file(filename, std::ifstream::in);
+
+    int useless;
+    for ( size_t i = 0; i < State::statesNumber; i++ )
+        if ( !(file >> useless >> policy[i] ) ) {
+                policyIsValid = false;
+                return false;
+            }
+    // Should we verify the data in some way?
+    file.close();
+    policyIsValid = true;
+    return true;
 }

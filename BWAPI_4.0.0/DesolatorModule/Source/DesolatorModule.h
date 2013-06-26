@@ -40,6 +40,11 @@ private:
   // STATE METHODS
   void updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits, bool alsoState = false);
   
+  // POLICY
+  bool policyIsValid;
+  std::array<int, State::statesNumber> policy;
+  bool loadPolicy(const char * filename);
+
   // ACTIONS
   void explore(const BWAPI::Unitset & units);
   BWAPI::PositionOrUnit attack(BWAPI::Unit *unit, const BWAPI::Unitset & allies, const BWAPI::Unitset & enemies);
@@ -54,6 +59,7 @@ private:
   std::array<std::array<std::tuple<long unsigned, long unsigned, double, double>, State::statesNumber>, State::statesNumber> table;
   // TABLE METHODS
   void updateTable(State, Action, State, double reward = 0.0);
+  void initTable();
   bool loadTable(const char * filename);
   bool saveTable(const char * filename);
 
