@@ -98,6 +98,8 @@ void DesolatorModule::onStart()
             gameStates[u->getID()] = gameState;
         }
         this->feedback = false;
+        if ( feedback )
+            Broodwar->setLocalSpeed(50);
     }
 }
 
@@ -138,7 +140,7 @@ void DesolatorModule::onFrame()
     /*** DESOLATOR IMPLEMENTATION ***/
     if(enemyUnits.empty())
     {
-        if ( ! feedback )
+     //   if ( ! feedback )
             // Explore together if no enemies are found and we are not moving.
             this->explore(myUnits);
     } else {
@@ -720,15 +722,24 @@ void DesolatorModule::updateGameState(BWAPI::Unit *unit, const BWAPI::Unitset & 
     if ( alsoState ) {
         int currentHealth = unit->getHitPoints() + unit->getShields();
         double reward = currentHealth - oldGameState.lastHealth;
+        // If our unit is melee it shouldn't care about dmg as much
+        if ( isMelee(unit) )
+            reward /= 4;
+
         // If we actually shoot (not only attacked), this should happen only 1 time
         if(oldGameState.shooted )
         {
-            reward += unit->getType().groundWeapon().damageAmount() / 2;
+            if ( isMelee(unit) )
+                // Zealots do 16, BWAPI values are wrong
+                reward += 16;
+            else
+                // Dragoons do 20
+                reward += 20;
             oldGameState.shooted = false;
         }
         if(this->feedback && reward != 0 )
-            Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d", unit->getID(), reward, oldGameState.lastHealth, currentHealth);
-
+            Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d dmg: %d", unit->getID(), reward, oldGameState.lastHealth, currentHealth, unit->getType().groundWeapon().damageAmount());
+        Broodwar->printf("Last action: %s", oldGameState.lastAction == ActualAction::Move ? "move" : "shoot");
         updateTable(oldGameState.state, oldGameState.lastAction, newState, reward);
         oldGameState.lastHealth = currentHealth;
         oldGameState.state = newState;
