@@ -99,7 +99,7 @@ void TrivialModule::onSendText(std::string text)
   // otherwise you may run into problems when you use the %(percent) character!
 }
 
-void TrivialModule::onReceiveText(BWAPI::Player* player, std::string text)
+void TrivialModule::onReceiveText(BWAPI::Player player, std::string text)
 {
   // Parse the received text
   Broodwar << player->getName() << " said \"" << text << "\"" << std::endl;
@@ -120,7 +120,7 @@ void TrivialModule::evaluateText(std::string text)
   }
 }
 
-void TrivialModule::onPlayerLeft(BWAPI::Player* player)
+void TrivialModule::onPlayerLeft(BWAPI::Player player)
 {
   // Interact verbally with the other players in the game by
   // announcing that the other player has left.
@@ -145,23 +145,23 @@ void TrivialModule::onNukeDetect(BWAPI::Position target)
   // You can also retrieve all the nuclear missile targets using Broodwar->getNukeDots()!
 }
 
-void TrivialModule::onUnitDiscover(BWAPI::Unit* unit)
+void TrivialModule::onUnitDiscover(BWAPI::Unit unit)
 {
 }
 
-void TrivialModule::onUnitEvade(BWAPI::Unit* unit)
+void TrivialModule::onUnitEvade(BWAPI::Unit unit)
 {
 }
 
-void TrivialModule::onUnitShow(BWAPI::Unit* unit)
+void TrivialModule::onUnitShow(BWAPI::Unit unit)
 {
 }
 
-void TrivialModule::onUnitHide(BWAPI::Unit* unit)
+void TrivialModule::onUnitHide(BWAPI::Unit unit)
 {
 }
 
-void TrivialModule::onUnitCreate(BWAPI::Unit* unit)
+void TrivialModule::onUnitCreate(BWAPI::Unit unit)
 {
   if ( Broodwar->isReplay() )
   {
@@ -176,11 +176,11 @@ void TrivialModule::onUnitCreate(BWAPI::Unit* unit)
   }
 }
 
-void TrivialModule::onUnitDestroy(BWAPI::Unit* unit)
+void TrivialModule::onUnitDestroy(BWAPI::Unit unit)
 {
 }
 
-void TrivialModule::onUnitMorph(BWAPI::Unit* unit)
+void TrivialModule::onUnitMorph(BWAPI::Unit unit)
 {
   if ( Broodwar->isReplay() )
   {
@@ -195,7 +195,7 @@ void TrivialModule::onUnitMorph(BWAPI::Unit* unit)
   }
 }
 
-void TrivialModule::onUnitRenegade(BWAPI::Unit* unit)
+void TrivialModule::onUnitRenegade(BWAPI::Unit unit)
 {
 }
 
@@ -204,6 +204,6 @@ void TrivialModule::onSaveGame(std::string gameName)
   Broodwar << "The game was saved to \"" << gameName << "\"" << std::endl;
 }
 
-void TrivialModule::onUnitComplete(BWAPI::Unit *unit)
+void TrivialModule::onUnitComplete(BWAPI::Unit unit)
 {
 }
