@@ -40,16 +40,16 @@ BWAPI::PositionOrUnit AI::attack(BWAPI::Unit unit, const BWAPI::Unitset & allies
                 return unit->getPosition();
             }
         }
-    } 
-    else {  
+    }
+    else {
         BWAPI::Unit weakestEnemy = nullptr;
         BWAPI::Unitset unitsInRange = unit->getUnitsInRadius(unit->getType().groundWeapon().maxRange());
-     
+
         // Get weakest in range
         for ( BWAPI::Unitset::iterator it = unitsInRange.begin(); it != unitsInRange.end(); it++ )
             if ( enemies.exists(*it) && ( weakestEnemy == nullptr || ( it->getHitPoints() + it->getShields() < weakestEnemy->getHitPoints() + weakestEnemy->getShields() )) )
                 weakestEnemy = *it;
-     
+
         if ( weakestEnemy != nullptr ) {
             Broodwar->printf("Attack method for unit %d: ATTACK WEAKEST ENEMY", unit->getID());
             return weakestEnemy;
@@ -146,28 +146,28 @@ BWAPI::Position AI::flee(BWAPI::Unit unit, const BWAPI::Unitset & friends, const
     if ( placeIwouldLikeToGo.y < 0 ) placeIwouldLikeToGo.y = 0;
     else if ( placeIwouldLikeToGo.y > Broodwar->mapHeight() * 32 ) placeIwouldLikeToGo.y = Broodwar->mapHeight() * 32;
 
-	// Here we normalize our vector to length 32 just because.
-	double x, y;
-	auto realx = (placeIwouldLikeToGo.x - unit->getPosition().x);
-	auto realy = (placeIwouldLikeToGo.y - unit->getPosition().y);
+    // Here we normalize our vector to length 32 just because.
+    double x, y;
+    auto realx = (placeIwouldLikeToGo.x - unit->getPosition().x);
+    auto realy = (placeIwouldLikeToGo.y - unit->getPosition().y);
 
-	if ( realy != 0.0 ) {
-		auto correlation = std::abs((double)realx / (double)realy);
+    if ( realy != 0.0 ) {
+        auto correlation = std::abs((double)realx / (double)realy);
 
-		y = 32.0 / std::sqrt((double)(correlation*correlation + 1));
-		x = y * correlation;
-	}
-	else {
-		y = 0.0;
-		x = 32.0;
-	}
+        y = 32.0 / std::sqrt((double)(correlation*correlation + 1));
+        x = y * correlation;
+    }
+    else {
+        y = 0.0;
+        x = 32.0;
+    }
 
-	x = copysign(x, realx);
-	y = copysign(y, realy);
+    x = copysign(x, realx);
+    y = copysign(y, realy);
 
-	placeIwouldLikeToGo = unit->getPosition();
-	placeIwouldLikeToGo.x += x;
-	placeIwouldLikeToGo.y += y;
+    placeIwouldLikeToGo = unit->getPosition();
+    placeIwouldLikeToGo.x += x;
+    placeIwouldLikeToGo.y += y;
 
    // Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
 
