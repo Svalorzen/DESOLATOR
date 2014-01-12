@@ -15,7 +15,7 @@ We propose to extend this application by applying the same algorithm for heterog
 1. Download starcraft.zip
 2. Unpack starcraft.zip
 3. Merge the Starcraft folder with the one created during the cloning of this repo.
-4. Add registry key 'InstallPath' containing the path of the Starcraft folder, which can be done at: ‘HKEY_CURRENT_USER -> Software -> Blizzard Entertainment -> Starcraft’. If Windows is 64 bits, the key needs to be in ‘HKEY_CURRENT_USER -> Software -> Wow6432Node -> Blizzard Entertainment -> Starcraft‘.
+4. Add registry key 'InstallPath' containing the path of the Starcraft folder, which can be done at: ‘HKEY_CURRENT_USER -> Software -> Blizzard Entertainment -> Starcraft’. If Windows is 64 bits, the key needs ALSO to be in ‘HKEY_CURRENT_USER -> Software -> Wow6432Node -> Blizzard Entertainment -> Starcraft‘ (ChaosLauncher will look only at the first, while the BWAPI installer will look at the second).
 
 ###Step 3: Install Microsoft Visual Studio 2010 and 2013
 1. Download and install Microsoft Visual Studio 2010 and 2013 Express.
