@@ -1,11 +1,8 @@
 ﻿#DESOLATOR
-DEcentralized SOLutions And Tactics Of RTS
+DEcentralized SOLutions And Tactics Of RTS (2)
 
 ##Description
-A track project given in June 2013 for the MSc Artificial Intelligence of the University of Amsterdam.
-In this project we try to extend the approach of C. Jackson and K. Bogert.
-They implemented an application of a Dec-POMDP in a real-time strategy game (Starcraft) using Joint Equilibrium-based Search for Policy (JESP) algorithm.
-We propose to extend this application by applying the same algorithm for heterogeneous teams.
+An extension over the previous project (the one this repo has been forked from). Here we try to extend our previous approach to result more flexible and to learn faster and better.
 
 ##Installation
 ###Step 1: Clone our repository
