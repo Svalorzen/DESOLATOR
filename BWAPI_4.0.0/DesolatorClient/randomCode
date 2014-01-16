@@ -1,0 +1,30 @@
+
+            {
+
+                if ( GS.lastPosition != currentPosition ) {
+                    moved = true;
+                    GS.lastPosition = currentPosition;
+                }
+            }
+
+
+            if ( finalVector.y != 0.0 ) {
+                auto correlation = std::abs((double)finalVector.x / (double)finalVector.y);
+
+                normalizedFinalVector.y = normalizedLength / std::sqrt((double)(correlation*correlation + 1));
+                normalizedFinalVector.x = normalizedFinalVector.y * correlation;
+            }
+            else {
+                normalizedFinalVector.y = 0.0;
+                normalizedFinalVector.x = normalizedLength;
+            }
+
+
+
+        // Draws IDs on top of units
+        for ( auto u : ourUnits ) {
+            auto p = u->getPosition(); p.y -= 30;
+            Broodwar->drawTextMap(p, "%d", u->getID());
+        }
+
+            // Broodwar->drawLineMap(unit->getPosition(), placeIwouldLikeToGo, BWAPI::Color(0,255,0));
