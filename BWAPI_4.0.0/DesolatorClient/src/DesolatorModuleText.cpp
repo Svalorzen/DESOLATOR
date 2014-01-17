@@ -6,7 +6,6 @@ using namespace Filter;
 namespace Desolator {
     void DesolatorModule::onSendText(std::string text) {
         // Send the text to the game if it is not being processed.
-        Broodwar->sendText("%s", text.c_str());
 
         if (text == "r") {
             feedback_ = !feedback_;
