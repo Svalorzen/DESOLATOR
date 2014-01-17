@@ -55,6 +55,7 @@ namespace Desolator {
         for(auto & u : us_->getUnits()) {
             UnitState uState(u);
             unitStates_[u->getID()] = uState;
+            unitStates_[u->getID()].setNoDraw();
         }
 
         feedback_ = false;
