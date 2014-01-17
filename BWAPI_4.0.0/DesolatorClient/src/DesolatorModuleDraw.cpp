@@ -8,7 +8,10 @@ using namespace Filter;
 namespace Desolator {
     void DesolatorModule::drawTargets() {
         for ( auto u : us_->getUnits() ) {
-            auto & target = unitStates_[u->getID()].drawTargetPosition;
+            auto & GS = unitStates_[u->getID()];
+            if ( ! GS.draw ) continue;
+
+            auto & target = GS.drawTargetPosition;
 
             if ( target.isPosition() )
                 Broodwar->drawLineMap(u->getPosition(), target.getPosition(), BWAPI::Color(0,255,0));
