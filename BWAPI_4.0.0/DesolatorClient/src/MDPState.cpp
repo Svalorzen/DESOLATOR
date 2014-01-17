@@ -12,22 +12,16 @@ namespace Desolator {
         4       // HEALTH               (0: 25%,        1: 50%,         2: 75%,         3: 100%)
     };
 
-    MDPState::MDPState() {
-        std::fill(std::begin(features_), std::end(features_), 0);
-    }
-
     size_t MDPState::getNumberOfStates() {
         return std::accumulate(std::begin(FeatureValues), std::end(FeatureValues), 1, std::multiplies<size_t>());
     }
 
+    MDPState::MDPState() {
+        std::fill(std::begin(features_), std::end(features_), 0);
+    }
+
     MDPState::MDPState(size_t x) {
-        x = std::min(x, getNumberOfStates()-1);
-
-        for ( int i = 0; i < FEATURE_COUNT; i++ ) {
-            features_[i] = x % ( FeatureValues[i] );
-            x /= FeatureValues[i];
-        }
-
+        setState(std::min(x, getNumberOfStates()-1));
     }
 
     MDPState::operator size_t() const {
@@ -41,5 +35,22 @@ namespace Desolator {
         }
 
         return x;
+    }
+
+    void MDPState::setState(size_t s) {
+        if ( s >= getNumberOfStates() ) return;
+
+        for ( int i = 0; i < FEATURE_COUNT; i++ ) {
+            features_[i] = s % ( FeatureValues[i] );
+            s /= FeatureValues[i];
+        }
+    }
+
+    void MDPState::setFeatureValue(Feature f, size_t v) {
+        features_[f] = std::min(v, FeatureValues[f]);
+    }
+
+    size_t MDPState::getFeatureValue(Feature f) const {
+        return features_[f];
     }
 }
