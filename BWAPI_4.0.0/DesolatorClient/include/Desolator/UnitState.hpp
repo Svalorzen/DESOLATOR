@@ -8,12 +8,12 @@
 namespace Desolator {
 
     enum Strategy {
-        Fight,
+        Fight = 0,
         Flee
     };
 
     enum Action{
-        Attack,
+        Attack = 0,
         Move,
         None
     };
