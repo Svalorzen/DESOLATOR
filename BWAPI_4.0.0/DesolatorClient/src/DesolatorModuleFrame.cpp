@@ -86,6 +86,7 @@ namespace Desolator {
                                 GS.setNoDraw();
                                 action = Action::None;
                             }
+                            break;
                         }
                         default: { // We attack
                             strategy = Strategy::Fight;
