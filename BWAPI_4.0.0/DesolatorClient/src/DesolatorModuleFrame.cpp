@@ -4,11 +4,6 @@
 #include <Desolator/BWAPIHelpers.hpp>
 #include <Desolator/Random.hpp>
 
-#include <iostream>
-
-using std::cout;
-using std::endl;
-
 using namespace BWAPI;
 using namespace Filter;
 
