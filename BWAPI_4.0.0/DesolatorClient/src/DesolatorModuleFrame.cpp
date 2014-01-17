@@ -4,6 +4,11 @@
 #include <Desolator/BWAPIHelpers.hpp>
 #include <Desolator/Random.hpp>
 
+#include <iostream>
+
+using std::cout;
+using std::endl;
+
 using namespace BWAPI;
 using namespace Filter;
 
@@ -27,6 +32,7 @@ namespace Desolator {
         /************************/
 
         if ( theirUnits.empty() ) {
+            cout << "Exploring..." << endl;
             for ( auto u : ourUnits )
                 unitStates_[u->getID()].setNoDraw();
 

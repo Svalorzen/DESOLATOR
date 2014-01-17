@@ -2,6 +2,11 @@
 
 #include <Desolator/Random.hpp>
 
+#include <iostream>
+
+using std::cout;
+using std::endl;
+
 using namespace BWAPI;
 using namespace Filter;
 
@@ -16,6 +21,7 @@ namespace Desolator {
         // We setup the environment only if this is not a replay
         if ( Broodwar->isReplay() ) return;
 
+        cout << "Reading files..." << endl;
         {
             std::ifstream tFile("transitions_numbers.data"), pFile("policy.data");
 
@@ -28,6 +34,7 @@ namespace Desolator {
             }
             else usingPolicy_ = true;               
         }
+        cout << "Files read." << endl;
 
         // Enable the UserInput flag, which allows us to control the bot and type messages.
         Broodwar->enableFlag(Flag::UserInput);
@@ -51,6 +58,7 @@ namespace Desolator {
         }
 
         feedback_ = false;
+        cout << "Start function completed." << endl;
     }
 
 
