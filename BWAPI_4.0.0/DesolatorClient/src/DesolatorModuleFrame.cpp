@@ -38,7 +38,7 @@ namespace Desolator {
         else {
             // This updates the game state for each unit we have ( not the MDP state though )
             for ( auto u : ourUnits )
-                updateUnitState(u, ourUnits, theirUnits);
+                updateUnitState(u);
 
             // Now that the observations of the units are correct, we select the actions that we want the units to perform.
             for ( auto u : ourUnits ) {
@@ -59,7 +59,7 @@ namespace Desolator {
                 if ( u->isIdle() || moved || GS.lastAction == Action::None ||
                    ( GS.lastAction == Action::Attack && ! GS.isStartingAttack &&  ! u->isAttackFrame() ) ) {
 
-                    updateUnitState(u, ourUnits, theirUnits, true);
+                    updateUnitState(u, true);
 
                     Strategy strategy;
                     Action action;

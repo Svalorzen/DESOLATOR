@@ -49,7 +49,7 @@ namespace Desolator {
             AIToolbox::Policy policy_;
 
             // STATE METHODS
-            void updateUnitState(BWAPI::Unit unit, const BWAPI::Unitset & alliedUnits, const BWAPI::Unitset & enemyUnits, bool alsoState = false);
+            void updateUnitState(BWAPI::Unit & unit, bool alsoState = false);
     };
 
 }

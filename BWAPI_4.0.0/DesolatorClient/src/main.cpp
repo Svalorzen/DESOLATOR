@@ -35,6 +35,7 @@ int main() {
                 module.dispatch(*e);
             }
 
+            // Debug draws
             //Broodwar->drawTextScreen(300,0,"FPS: %f",Broodwar->getAverageFPS());
             module.drawTargets();
             module.drawIDs();
