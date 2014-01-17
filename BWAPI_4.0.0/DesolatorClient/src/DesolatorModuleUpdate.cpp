@@ -49,13 +49,14 @@ namespace Desolator {
         BWAPI::Unit nearestAttackedAlly = nullptr, nearestAlly = nullptr;
         for ( auto u : us_->getUnits() ) {
             if ( u == unit ) continue;
+            auto & uGS = unitStates_[u->getID()];
 
             // Find nearest Ally
             if ( nearestAlly == nullptr || nearestAlly->getDistance(unit) > u->getDistance(unit) )
                 nearestAlly = u;
 
             // Find nearest Attacked Ally
-            if ( GS.state.getFeatureValue(MDPState::ENEMY_PROXIMITY) == 2 && ( nearestAttackedAlly == nullptr || nearestAttackedAlly->getDistance(unit) > u->getDistance(unit) ) )
+            if ( uGS.nearestAttacker && ( nearestAttackedAlly == nullptr || nearestAttackedAlly->getDistance(unit) > u->getDistance(unit) ) )
                 nearestAttackedAlly = u;
         }
         GS.nearestAttackedAlly = nearestAttackedAlly;
@@ -73,7 +74,7 @@ namespace Desolator {
 
         if ( GS.nearestAttacker )
             newState.setFeatureValue(MDPState::ENEMY_PROXIMITY, 2);
-        else { // We loop over everything because nearest enemy may have bad range 
+        else { // We loop over everything because nearest enemy may have bad range
             for ( auto & e : theirUnits ) {
                 int enemyRealRange = getAppliedWeaponRange(e);
                 BWAPI::Unitset unitsInEnemyRange = e->getUnitsInRadius(enemyRealRange);
@@ -120,9 +121,9 @@ namespace Desolator {
                 else                    reward += 20; // Dragoons do 20
                 GS.shooted = false;
             }
-            
+
             //if(this->feedback && reward != 0 )
-            //    Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d dmg: %d", 
+            //    Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d dmg: %d",
             //    unit->getID(), reward, GS.lastHealth, currentHealth, unit->getType().groundWeapon().damageAmount());
 
             // We are updating the MDP state so we need to update the transition table.

@@ -50,7 +50,7 @@ namespace Desolator {
                 BWAPI::Unitset unitsInRange = unit->getUnitsInRadius(unit->getType().groundWeapon().maxRange());
 
                 // Get weakest in range
-                for ( auto & u : unitsInRange ) 
+                for ( auto & u : unitsInRange )
                     if ( enemies.exists(u) && ( weakestEnemy == nullptr || ( u->getHitPoints() + u->getShields() < weakestEnemy->getHitPoints() + weakestEnemy->getShields() )) )
                         weakestEnemy = u;
 
@@ -120,7 +120,7 @@ namespace Desolator {
             }
 
             // Create final vector
-            BWAPI::Position finalVector(0,0); 
+            BWAPI::Position finalVector(0,0);
             for ( auto & v : fieldVectors )
                 finalVector += v;
 
@@ -137,7 +137,7 @@ namespace Desolator {
 
             return placeIwouldLikeToGo;
         }
-        
+
             // Get repulsed by inaccessible regions
             /*
             auto & regions = Broodwar->getAllRegions();
