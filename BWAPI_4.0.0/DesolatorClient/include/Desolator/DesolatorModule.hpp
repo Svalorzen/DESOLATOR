@@ -19,7 +19,7 @@ namespace Desolator {
 
             DesolatorModule();
 
-            void dispatch(BWAPI::Event);
+            void dispatch(const BWAPI::Event &);
 
             void onStart        ();
             void onEnd          (bool isWinner);
