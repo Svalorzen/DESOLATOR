@@ -32,7 +32,6 @@ namespace Desolator {
         /************************/
 
         if ( theirUnits.empty() ) {
-            cout << "Exploring..." << endl;
             for ( auto u : ourUnits )
                 unitStates_[u->getID()].setNoDraw();
 
