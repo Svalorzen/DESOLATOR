@@ -1,6 +1,6 @@
 #include <Desolator/MDPState.hpp>
 
-#include <algorithm>
+#include <numeric>
 
 namespace Desolator {
 

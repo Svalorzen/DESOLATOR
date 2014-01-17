@@ -13,6 +13,7 @@
 *.a
 
 *.swp
+*.pyc
 
 # Ignore folders
 Starcraft/*
