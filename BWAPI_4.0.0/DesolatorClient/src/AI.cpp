@@ -138,7 +138,7 @@ namespace Desolator {
             //cout << "Made valid. " << endl;
             // We get again the true movement vector
             finalVector = placeIwouldLikeToGo - unit->getPosition();
-            // Here we normalize our vector to length 32 just because.
+            // Here we normalize our vector to length 320 just because.
             double normalizedLength = 32.0 * 10;
             BWAPI::Position normalizedFinalVector = normalize(finalVector, normalizedLength);
             //cout << "Normalized" << endl;

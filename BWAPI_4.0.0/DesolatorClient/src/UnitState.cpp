@@ -25,7 +25,7 @@ namespace Desolator {
         notMovingTurns = 0;
 
         draw = false;
-        drawTargetPosition = { 0, 0 };
+        drawTargetPosition = {0,0};
     }
 
     void UnitState::setDraw(const BWAPI::PositionOrUnit & p) {

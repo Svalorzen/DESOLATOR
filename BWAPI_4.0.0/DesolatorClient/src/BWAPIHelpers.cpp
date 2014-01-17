@@ -54,11 +54,10 @@ namespace Desolator {
 
     BWAPI::Position copysign(const BWAPI::Position& magn, const BWAPI::Position& sign) {
         BWAPI::Position result;
-        //cout << "Copysign. Operands are: " << magn << " and " << sign << endl;
+
         result.y = std::copysign(magn.y, sign.y);
-        //cout << "Done y"<<endl;
         result.x = std::copysign(magn.x, sign.x);
-        //cout << "done x. result is: " << result << endl;
+
         return result;
     }
 }

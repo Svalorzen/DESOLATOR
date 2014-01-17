@@ -49,7 +49,9 @@ namespace Desolator {
             AIToolbox::Policy policy_;
 
             // STATE METHODS
-            void updateUnitState(BWAPI::Unit & unit, bool alsoState = false);
+            void updateUnitState(BWAPI::Unit & unit);
+            void shareKnowledge(BWAPI::Unit & unit);
+            void updateUnitMDPState(BWAPI::Unit & unit);
     };
 
 }

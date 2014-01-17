@@ -47,6 +47,9 @@ namespace Desolator {
             for ( auto u : ourUnits )
                 updateUnitState(u);
             cout << "Basic update completed" << endl;
+            for ( auto u : ourUnits )
+                shareKnowledge(u);
+            cout << "Shares completed" << endl;
             // Now that the observations of the units are correct, we select the actions that we want the units to perform.
             for ( auto u : ourUnits ) {
                 auto & GS = unitStates_[u->getID()];
@@ -67,8 +70,9 @@ namespace Desolator {
                 if ( u->isIdle() || moved || GS.lastAction == Action::None ||
                    ( GS.lastAction == Action::Attack && ! GS.isStartingAttack &&  ! u->isAttackFrame() ) ) {
                     cout << "- UNIT TICK" << endl;
-                    updateUnitState(u, true);
-                    cout << "- UNIT updated state" << endl;
+                    updateUnitMDPState(u);
+                    cout << "- UNIT MDP updated state" << endl;
+
                     Strategy strategy;
                     Action action;
 
