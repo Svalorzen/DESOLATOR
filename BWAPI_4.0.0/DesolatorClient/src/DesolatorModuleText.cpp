@@ -6,16 +6,12 @@ using namespace Filter;
 namespace Desolator {
     void DesolatorModule::onSendText(std::string text) {
         // Send the text to the game if it is not being processed.
-        Broodwar->sendText("%s", text.c_str());
+        //Broodwar->sendText("%s", text.c_str());
 
-        if (text == "r") {
+        if (text == "f") {
             feedback_ = !feedback_;
 
-            if ( feedback_ )
-                Broodwar->setLocalSpeed(50);
-            else
-                Broodwar->setLocalSpeed(0);
-            return;
+            Broodwar->printf("%s", feedback_ ? "Feedback ACTIVE" : "Feedback DISABLED");
         }
         else if ( text == "q" ) {
             Broodwar->leaveGame();

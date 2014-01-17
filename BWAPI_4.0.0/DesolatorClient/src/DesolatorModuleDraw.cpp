@@ -11,12 +11,8 @@ namespace Desolator {
             auto & GS = unitStates_[u->getID()];
             if ( ! GS.draw ) continue;
 
-            auto & target = GS.drawTargetPosition;
-
-            if ( target.isPosition() )
-                Broodwar->drawLineMap(u->getPosition(), target.getPosition(), BWAPI::Color(0,255,0));
-            else
-                Broodwar->drawLineMap(u->getPosition(), target.getUnit()->getPosition(), BWAPI::Color(0,255,0));
+            Broodwar->drawLineMap(u->getPosition(), GS.drawTargetPosition, BWAPI::Color(0, 255, 0));
+           
         }
     }
 

@@ -2,6 +2,11 @@
 
 #include <Desolator/BWAPIHelpers.hpp>
 
+#include <iostream>
+
+using std::cout;
+using std::endl;
+
 using namespace BWAPI;
 using namespace Filter;
 
@@ -12,6 +17,9 @@ namespace Desolator {
     void DesolatorModule::updateUnitState(BWAPI::Unit & unit, bool alsoState) {
         auto & GS = unitStates_[unit->getID()];
         MDPState newState; // Everything is 0
+
+        //cout << "Updating State"; if (alsoState) cout << " and TICK!";
+        //cout << endl;
 
         auto & ourUnits    = us_->getUnits();
         auto & theirUnits  = them_->getUnits();
@@ -30,6 +38,8 @@ namespace Desolator {
 
         // We can't know the Strategy yet
         // GS.lastStrategy = CAN'T FILL
+        //cout << "Stage 1 completed" << endl;
+   
 
         // Is the attack tick done?
         if ( GS.isStartingAttack && unit->isAttackFrame() ) {
@@ -70,7 +80,7 @@ namespace Desolator {
             GS.nearestEnemy = nearestEnemy;
             GS.nearestAttacker = nearestAttacker;
         }
-
+        //cout << "Stage 2 completed" << endl;
         // Nearest Attacked Ally
         {
             BWAPI::Unit nearestAttackedAlly = nullptr, nearestAlly = nullptr;
@@ -96,7 +106,7 @@ namespace Desolator {
             GS.nearestAttackedAlly = nearestAttackedAlly;
             GS.nearestAlly = nearestAlly;
         }
-
+        // cout << "Stage 3 completed" << endl;
         // State and Table updating
         if ( alsoState ) {
             int currentHealth = unit->getHitPoints() + unit->getShields();
@@ -117,12 +127,14 @@ namespace Desolator {
             //if(this->feedback && reward != 0 )
             //    Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d dmg: %d", 
             //    unit->getID(), reward, GS.lastHealth, currentHealth, unit->getType().groundWeapon().damageAmount());
-
+            //std::cout << "Old state: " << GS.state << " -- New state: " << newState << " -- Action: " << GS.lastStrategy << "Possibles: " << Strategy::Fight << " " << Strategy::Flee << endl;
             // We are updating the MDP state so we need to update the transition table.
             table_.record(GS.state, newState, GS.lastStrategy, reward);
             // Actual update
             GS.lastHealth = currentHealth;
             GS.state = newState;
+            //std::cout << "Finished stage 4" << endl;
         }
+        //std::cout << "Done." << endl;
     }
 }

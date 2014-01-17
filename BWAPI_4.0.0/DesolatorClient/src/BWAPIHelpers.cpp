@@ -1,5 +1,9 @@
 #include <Desolator/BWAPIHelpers.hpp>
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 using namespace BWAPI;
 
 namespace Desolator {
@@ -31,7 +35,7 @@ namespace Desolator {
 
     BWAPI::Position normalize(const BWAPI::Position & p, double length) {
         BWAPI::Position norm;
-
+        //cout << "normalizing..." << endl;
         if ( p.y != 0.0 ) {
             auto correlation = std::abs((double)p.x / (double)p.y);
 
@@ -42,16 +46,19 @@ namespace Desolator {
             norm.y = 0.0;
             norm.x = length;
         }
-
+        //cout << "copysigning..." << endl;
         norm = copysign(norm, p);
-
+        //cout << "done." << endl;
         return norm;
     }
 
     BWAPI::Position copysign(const BWAPI::Position& magn, const BWAPI::Position& sign) {
         BWAPI::Position result;
-        result.y = copysign(magn.y, sign.y);
-        result.x = copysign(magn.x, sign.x);
+        //cout << "Copysign. Operands are: " << magn << " and " << sign << endl;
+        result.y = std::copysign(magn.y, sign.y);
+        //cout << "Done y"<<endl;
+        result.x = std::copysign(magn.x, sign.x);
+        //cout << "done x. result is: " << result << endl;
         return result;
     }
 }
