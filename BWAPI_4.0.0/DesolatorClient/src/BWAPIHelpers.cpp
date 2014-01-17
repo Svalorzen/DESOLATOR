@@ -43,6 +43,15 @@ namespace Desolator {
             norm.x = length;
         }
 
+        norm = copysign(norm, p);
+
         return norm;
+    }
+
+    BWAPI::Position copysign(const BWAPI::Position& magn, const BWAPI::Position& sign) {
+        BWAPI::Position result;
+        result.y = copysign(magn.y, sign.y);
+        result.x = copysign(magn.x, sign.x);
+        return result;
     }
 }

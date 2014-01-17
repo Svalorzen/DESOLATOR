@@ -4,7 +4,7 @@
 #include <BWAPI.h>
 
 namespace Desolator {
-    constexpr int STANDARD_SPEED_FPS = 19;
+    const int STANDARD_SPEED_FPS = 19;
 
     // The range actually takes into consideration unit size, so we try to do that
     int getActualWeaponRange(const BWAPI::Unit & unit);
@@ -19,7 +19,10 @@ namespace Desolator {
 
     BWAPI::TilePosition convertToTile(const BWAPI::Position &);
 
+    // Considers the positions as 2D vectors. Set the length of the vector to length.
     BWAPI::Position normalize(const BWAPI::Position &, double length);
+    // Copies the signs from the second argument with the magnitude of the first argument.
+    BWAPI::Position copysign(const BWAPI::Position&, const BWAPI::Position&);
 }
 
 #endif

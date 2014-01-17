@@ -133,14 +133,6 @@ namespace Desolator {
             double normalizedLength = 32.0;
             BWAPI::Position normalizedFinalVector = normalize(finalVector, normalizedLength);
 
-            // test
-            std::cout << "Testing copysign oneliner\n";
-            BWAPI::Position test = copysign(normalizedFinalVector, finalVector);
-
-            normalizedFinalVector.y = copysign(normalizedFinalVector.y, finalVector.y);
-            normalizedFinalVector.x = copysign(normalizedFinalVector.x, finalVector.x);
-            std::cout << "Oneliner test: " << test << " -- True result: " << normalizedFinalVector << "\n";
-
             placeIwouldLikeToGo = unit->getPosition() + normalizedFinalVector;
 
             return placeIwouldLikeToGo;
