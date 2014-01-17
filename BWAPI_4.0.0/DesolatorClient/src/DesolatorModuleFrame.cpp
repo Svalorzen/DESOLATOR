@@ -39,7 +39,8 @@ namespace Desolator {
             // This updates the game state for each unit we have ( not the MDP state though )
             for ( auto u : ourUnits )
                 updateUnitState(u);
-
+            for ( auto u : ourUnits )
+                shareKnowledge(u);
             // Now that the observations of the units are correct, we select the actions that we want the units to perform.
             for ( auto u : ourUnits ) {
                 auto & GS = unitStates_[u->getID()];
@@ -59,7 +60,7 @@ namespace Desolator {
                 if ( u->isIdle() || moved || GS.lastAction == Action::None ||
                    ( GS.lastAction == Action::Attack && ! GS.isStartingAttack &&  ! u->isAttackFrame() ) ) {
 
-                    updateUnitState(u, true);
+                    updateUnitMDPState(u);
 
                     Strategy strategy;
                     Action action;
@@ -126,7 +127,7 @@ namespace Desolator {
                 } // End, personal tick
                 // End of hack, here we stop the units so I guess internally it resets so we can move it again.
                 else if ( GS.notMovingTurns == 3 ) {
-                    Broodwar->sendText("Unit %d triggered an hack", u->getID());
+                    Broodwar->printf("Unit %d triggered an hack", u->getID());
 
                     log_ << "HACK TRIGGERED" << "\n";
                     log_ << "Action: " << GS.lastAction << " -- Strategy: " << GS.lastStrategy << "\n";

@@ -50,7 +50,7 @@ namespace Desolator {
             int notMovingTurns;
 
             bool draw;
-            BWAPI::PositionOrUnit drawTargetPosition;
+            BWAPI::Position drawTargetPosition;
     };
 
 }
