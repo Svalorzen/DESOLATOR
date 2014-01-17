@@ -28,8 +28,8 @@ namespace Desolator {
             newState.setFeatureValue(MDPState::WEAPON_COOLDOWN, unit->getGroundWeaponCooldown() != 0);
         }
 
-        // We can't know the Action yet
-        // GS.lastAction = CAN'T FILL
+        // We can't know the Strategy yet
+        // GS.lastStrategy = CAN'T FILL
 
         // Is the attack tick done?
         if ( GS.isStartingAttack && unit->isAttackFrame() ) {
@@ -119,7 +119,7 @@ namespace Desolator {
             //    unit->getID(), reward, GS.lastHealth, currentHealth, unit->getType().groundWeapon().damageAmount());
 
             // We are updating the MDP state so we need to update the transition table.
-            table_.record(GS.state, newState, GS.lastAction, reward);
+            table_.record(GS.state, newState, GS.lastStrategy, reward);
             // Actual update
             GS.lastHealth = currentHealth;
             GS.state = newState;
