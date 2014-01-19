@@ -24,36 +24,36 @@ namespace Desolator {
 
         BWAPI::PositionOrUnit attack(BWAPI::Unit unit, const BWAPI::Unitset & /*allies*/, const BWAPI::Unitset & enemies, DesolatorModule::UnitStates & unitStates ) {
             auto & GS = unitStates[unit->getID()];
-            cout << "## Attack AI" << endl;
+            //cout << "## Attack AI" << endl;
             if ( !GS.state.getFeatureValue(MDPState::CAN_TARGET) ) {
-                cout << "Can't target anyone" << endl;
+                //    cout << "Can't target anyone" << endl;
                 // No enemy in range move to closest ally that is targeted
                 if ( GS.nearestAttackedAlly != nullptr ) {
                     // If we have a closest ally that is targeted move towards it.
                     // Broodwar->printf("Attack method for unit %d: ATTACK TO NEAREST FRIEND", unit->getID());
-                    cout << "Finding attacker of nearest ally" << endl;
+                    //  cout << "Finding attacker of nearest ally" << endl;
                     auto & attacker = unitStates[GS.nearestAttackedAlly->getID()].nearestAttacker;
                     if (!attacker) cout << "WTFWTFWTF" << endl;
-                    cout << "   done." << endl;
+                    //cout << "   done." << endl;
                     return attacker;
                 }
                 else {
                     // If our allieds died or are not targeted kill closest enemy.
                     if ( GS.nearestEnemy != nullptr ) {
-                        cout << "Returning closest enemy" << endl;
+                        //  cout << "Returning closest enemy" << endl;
                         // Broodwar->printf("Attack method for unit %d: MOVE TO NEAREST ENEMY", unit->getID());
                         return GS.nearestEnemy;
                     }
                     // Nothing to do...
                     else {
-                        cout << "### WAT -- no closest enemy? where is everyone? ###" << endl;
+                        //cout << "### WAT -- no closest enemy? where is everyone? ###" << endl;
                         log << "AI-Attack: " << __LINE__ << " -- ERROR: Called attack with no enemies in sight\n";
                         return unit->getPosition();
                     }
                 }
             }
             else {
-                cout << "Setting target for shooting " << endl;
+                //   cout << "Setting target for shooting " << endl;
                 BWAPI::Unit weakestEnemy = nullptr;
                 BWAPI::Unitset unitsInRange = unit->getUnitsInRadius(unit->getType().groundWeapon().maxRange());
 
@@ -61,13 +61,13 @@ namespace Desolator {
                 for ( auto & u : unitsInRange ) 
                     if ( enemies.exists(u) && ( weakestEnemy == nullptr || ( u->getHitPoints() + u->getShields() < weakestEnemy->getHitPoints() + weakestEnemy->getShields() )) )
                         weakestEnemy = u;
-                cout << "Got weakest in range " << endl;
+                    // cout << "Got weakest in range " << endl;
                 if ( weakestEnemy != nullptr ) {
                     // Broodwar->printf("Attack method for unit %d: ATTACK WEAKEST ENEMY", unit->getID());
                     return weakestEnemy;
                 }
                 else {
-                    cout << "### WTF: NO ENEMY IN RANGE EVEN THOUGH I CAN TARGET" << endl;
+                    //cout << "### WTF: NO ENEMY IN RANGE EVEN THOUGH I CAN TARGET" << endl;
                     // Broodwar->printf("Attack method for unit %d: ERROR NO ENEMY IN RANGE", unit->getID());
                     log << "AI-Attack: " << __LINE__ << " -- ERROR: No enemy in range with canTarget true\n";
                     return GS.nearestEnemy;

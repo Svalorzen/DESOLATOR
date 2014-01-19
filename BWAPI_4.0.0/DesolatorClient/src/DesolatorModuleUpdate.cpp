@@ -55,13 +55,14 @@ namespace Desolator {
         BWAPI::Unit nearestAttackedAlly = nullptr, nearestAlly = nullptr;
         for ( auto u : us_->getUnits() ) {
             if ( u == unit ) continue;
+            auto & uGS = unitStates_[u->getID()];
 
             // Find nearest Ally
             if ( nearestAlly == nullptr || nearestAlly->getDistance(unit) > u->getDistance(unit) )
                 nearestAlly = u;
 
             // Find nearest Attacked Ally
-            if ( GS.state.getFeatureValue(MDPState::ENEMY_PROXIMITY) == 2 && ( nearestAttackedAlly == nullptr || nearestAttackedAlly->getDistance(unit) > u->getDistance(unit) ) )
+            if ( uGS.nearestAttacker && ( nearestAttackedAlly == nullptr || nearestAttackedAlly->getDistance(unit) > u->getDistance(unit) ) )
                 nearestAttackedAlly = u;
         }
         GS.nearestAttackedAlly = nearestAttackedAlly;

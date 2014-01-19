@@ -32,7 +32,7 @@ namespace Desolator {
         /************************/
 
         if ( theirUnits.empty() ) {
-            cout << "Exploring" << endl;
+            //   cout << "Exploring" << endl;
             for ( auto u : ourUnits )
                 unitStates_[u->getID()].setNoDraw();
 
@@ -42,18 +42,18 @@ namespace Desolator {
             }
         }
         else {
-            cout << "New action frame" << endl;
+            //cout << "New action frame" << endl;
             // This updates the game state for each unit we have ( not the MDP state though )
             for ( auto u : ourUnits )
                 updateUnitState(u);
-            cout << "Basic update completed" << endl;
+            //cout << "Basic update completed" << endl;
             for ( auto u : ourUnits )
                 shareKnowledge(u);
-            cout << "Shares completed" << endl;
+            //cout << "Shares completed" << endl;
             // Now that the observations of the units are correct, we select the actions that we want the units to perform.
             for ( auto u : ourUnits ) {
                 auto & GS = unitStates_[u->getID()];
-                cout << "Executing unit " << u->getID() << endl;
+                //cout << "Executing unit " << u->getID() << endl;
 
                 // Check when the units moved a tile
                 bool moved = GS.updatePosition(u->getTilePosition());
@@ -65,13 +65,13 @@ namespace Desolator {
                     GS.lastPerfectPosition = u->getPosition();
                     GS.notMovingTurns = 0;
                 }
-                cout << "- unit movement updates done" << endl;
+                //cout << "- unit movement updates done" << endl;
                 // If our personal tick ended
                 if ( u->isIdle() || moved || GS.lastAction == Action::None ||
                    ( GS.lastAction == Action::Attack && ! GS.isStartingAttack &&  ! u->isAttackFrame() ) ) {
-                    cout << "- UNIT TICK" << endl;
+                    //cout << "- UNIT TICK" << endl;
                     updateUnitMDPState(u);
-                    cout << "- UNIT MDP updated state" << endl;
+                    //cout << "- UNIT MDP updated state" << endl;
 
                     Strategy strategy;
                     Action action;
@@ -82,31 +82,31 @@ namespace Desolator {
                     if ( usingPolicy_ ) selectedAction = policy_.sampleAction(GS.state);
                     else selectedAction = RandomInt::get(0,1);
                     //selectedAction = 1;
-                    cout << "Got action: " << selectedAction << endl;
+                    //cout << "Got action: " << selectedAction << endl;
                     switch ( selectedAction ) {
                         case 1: { // We flee
                             strategy = Strategy::Flee;
-                            cout << "Flee!" << endl;
+                            //cout << "Flee!" << endl;
                             // Obtain where to flee
                             auto position = AI::flee(u, ourUnits, theirUnits, unitStates_);
-                            cout << "Got Position." << endl;
+                            //cout << "Got Position." << endl;
                             if ( convertToTile(position) != u->getTilePosition() ) {
                                 u->move   ( position );
                                 GS.setDraw( position );
                                 action = Action::Move;
-                                cout << "MOVE: different so we draw." << endl;
+                                //cout << "MOVE: different so we draw." << endl;
                             }
                             else {
                                 GS.setNoDraw();
                                 action = Action::None;
-                                cout << "NONE: same we don't draw." << endl;
+                                //cout << "NONE: same we don't draw." << endl;
                             }
                             break;
                         }
                         default: { // We attack
                             strategy = Strategy::Fight;
                             action   = Action::Attack;
-                            cout << "Fight" << endl;
+                            //cout << "Fight" << endl;
                             // Obtain who to attack or where to go
                             PositionOrUnit target = AI::attack(u, ourUnits, theirUnits, unitStates_);
 
@@ -115,12 +115,12 @@ namespace Desolator {
                                     u->move   ( target.getPosition() );
                                     GS.setDraw( target.getPosition() );
                                     action = Action::Move;
-                                    cout << "Moving" << endl;
+                                    //cout << "Moving" << endl;
                                 }
                                 else {
                                     GS.setNoDraw();
                                     action = Action::None;
-                                    cout << "Nothing.." << endl;
+                                    //cout << "Nothing.." << endl;
                                 }
                             }
                             // This check is to avoid breaking Starcraft when we spam attack command
@@ -132,7 +132,7 @@ namespace Desolator {
                                     GS.lastTarget = target.getUnit();
 
                                     GS.setDraw(target);
-                                    cout << "Attack" << endl;
+                                    //cout << "Attack" << endl;
                                 }
                             }
                         }
