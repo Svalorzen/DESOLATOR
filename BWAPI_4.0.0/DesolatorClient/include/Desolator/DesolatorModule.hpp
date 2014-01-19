@@ -33,7 +33,7 @@ namespace Desolator {
         private:
             BWAPI::Player us_;
             BWAPI::Player them_;
-            
+
             BWAPI::Position explore();
 
             // STATE VARIABLES
