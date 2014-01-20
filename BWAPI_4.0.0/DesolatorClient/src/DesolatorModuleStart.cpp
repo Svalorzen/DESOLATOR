@@ -2,6 +2,8 @@
 
 #include <Desolator/Random.hpp>
 
+#include <iostream>
+
 using namespace BWAPI;
 using namespace Filter;
 
@@ -65,6 +67,7 @@ namespace Desolator {
 
     void DesolatorModule::onEnd(bool /* isWinner */ ) {
         ++completedMatches_;
+        std::cout << "Completed matches: " << completedMatches_ << "\n";
 
         std::ofstream tFile("transitions_numbers.data");
 
