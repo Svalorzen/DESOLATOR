@@ -5,11 +5,13 @@
 namespace Desolator {
 
     const size_t MDPState::FeatureValues[] = {
+        // TOP BITS
         3,      // ENEMY_PROXIMITY      (0: free,       1: enemy range, 2: targeted)
         2,      // FRIEND_PROXIMITY     (0: uncovered,  1: covered)
         2,      // WEAPON_COOLDOWN      (0: false,      1: true)
         2,      // CAN_TARGET           (0: false,      1: true)
         4       // HEALTH               (0: 25%,        1: 50%,         2: 75%,         3: 100%)
+        // BOTTOM BITS
     };
 
     size_t MDPState::getNumberOfStates() {
@@ -28,8 +30,8 @@ namespace Desolator {
         size_t x = 0;
         size_t base = 1;
 
-        //x = feature(0) + feature(1) * feature_0_max + feature(2) * feature_0_max * feature_1_max;
-        for ( int i = 0; i < FEATURE_COUNT; i++ ) {
+        //x = feature(BOTTOM) + feature(BOTTOM+1) * feature_BOTTOM_max + feature(BOTTOM+2) * feature_BOTTOM_max * feature_BOTTOM+1_max + ...;
+        for ( int i = FEATURE_COUNT-1; i >= 0; --i ) {
             x += features_[i] * base;
             base *= FeatureValues[i];
         }
@@ -40,7 +42,7 @@ namespace Desolator {
     void MDPState::setState(size_t s) {
         if ( s >= getNumberOfStates() ) return;
 
-        for ( int i = 0; i < FEATURE_COUNT; i++ ) {
+        for ( int i = FEATURE_COUNT-1; i >= 0; --i ) {
             features_[i] = s % ( FeatureValues[i] );
             s /= FeatureValues[i];
         }

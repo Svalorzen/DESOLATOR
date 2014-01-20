@@ -1,6 +1,9 @@
 #include <Desolator/DesolatorModule.hpp>
 
 #include <Desolator/Random.hpp>
+#include <AIToolbox\MDP\RLModel.hpp>
+#include <AIToolbox\MDP\ValueIteration.hpp>
+#include <AIToolbox\MDP\QGreedyPolicy.hpp>
 
 #include <iostream>
 
@@ -68,11 +71,36 @@ namespace Desolator {
     void DesolatorModule::onEnd(bool /* isWinner */ ) {
         ++completedMatches_;
         std::cout << "Completed matches: " << completedMatches_ << "\n";
+        {
+            std::ofstream tFile("transitions_numbers.data");
 
-        std::ofstream tFile("transitions_numbers.data");
+            if (tFile) tFile << table_;
+            else         log_ << "We could not save the new experience to file.\n";
+        }
+        if (!(completedMatches_ % 50)) {
+            std::cout << "-- Creating MDP model...\n";
+            AIToolbox::MDP::RLModel mdp(table_);
+            mdp.sync();
+            std::cout << "-- Solving data with Value Iteration...\n";
+            AIToolbox::MDP::ValueIteration solver;
+            auto solution = solver(mdp);
+            std::cout << "-- Creating policy...\n";
+            AIToolbox::MDP::QGreedyPolicy p(std::get<2>(solution));
+            std::cout << "-- Saving policy...\n";
+            std::string filename = "policy_";
+            filename += std::to_string(completedMatches_);
+        
+            std::ofstream pFile(filename);
+            pFile << p;
+            std::cout << "-- Saving respective experience for policy...\n";
+            filename = "experience_";
+            filename += std::to_string(completedMatches_);
 
-        if ( tFile ) tFile << table_;
-        else         log_ << "We could not save the new experience to file.\n";
+            std::ofstream tFile(filename);
+            tFile << table_;
+
+            std::cout << "-- Done.\n";
+        }
 
         Broodwar->restartGame();
     }

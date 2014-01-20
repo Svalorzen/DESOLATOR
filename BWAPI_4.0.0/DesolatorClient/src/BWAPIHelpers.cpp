@@ -36,14 +36,15 @@ namespace Desolator {
     BWAPI::Position normalize(const BWAPI::Position & p, double length) {
         BWAPI::Position norm;
         //cout << "normalizing..." << endl;
-        if ( p.y != 0.0 ) {
+
+        if ( p.y != 0 ) {
             auto correlation = std::abs((double)p.x / (double)p.y);
 
             norm.y = length / std::sqrt((double)(correlation*correlation + 1));
             norm.x = norm.y * correlation;
         }
         else {
-            norm.y = 0.0;
+            norm.y = 0;
             norm.x = length;
         }
         //cout << "copysigning..." << endl;
