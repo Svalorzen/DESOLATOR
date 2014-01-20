@@ -17,6 +17,8 @@ int main() {
     std::cout << "Connecting..." << std::endl;
     reconnect();
 
+    Desolator::DesolatorModule module;
+
     while( true ) {
         std::cout << "Waiting to enter match.." << std::endl;
         while ( !Broodwar->isInGame() ) {
@@ -27,8 +29,6 @@ int main() {
             }
         }
         std::cout << "Starting match!" << std::endl;
-
-        Desolator::DesolatorModule module;
 
         while( Broodwar->isInGame() ) {
             for( auto e = Broodwar->getEvents().begin(); e != Broodwar->getEvents().end(); ++e) {

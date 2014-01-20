@@ -23,6 +23,7 @@ namespace Desolator {
             try {
                 int speed = std::stoi(text);
                 Broodwar->setLocalSpeed(speed);
+                currentSpeed_ = speed;
                 return;
             }
             catch (const std::invalid_argument& error) {

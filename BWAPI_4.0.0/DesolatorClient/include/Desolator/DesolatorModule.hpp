@@ -41,6 +41,9 @@ namespace Desolator {
 
             // FEEDBACK STUFF
             bool feedback_;
+            bool startup_;
+            unsigned currentSpeed_;
+            unsigned completedMatches_;
 
             std::ofstream log_;
 
