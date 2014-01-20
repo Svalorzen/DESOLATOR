@@ -39,7 +39,7 @@ namespace Desolator {
         Broodwar->setLocalSpeed(50);
 
         if ( Broodwar->enemy() ) // First make sure there is an enemy
-            Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << std::endl;
+            Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << "\n";
 
         us_   = Broodwar->self();
         them_ = Broodwar->enemy();

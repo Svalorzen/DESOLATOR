@@ -6,8 +6,6 @@
 #include <Desolator/BWAPIHelpers.hpp>
 #include <Desolator/Random.hpp>
 
-#include <iostream>
-
 namespace Desolator {
     namespace AI {
         static std::fstream log("ai.log", std::fstream::out | std::fstream::app);
