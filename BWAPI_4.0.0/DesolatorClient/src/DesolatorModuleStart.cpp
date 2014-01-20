@@ -9,13 +9,20 @@ namespace Desolator {
 
     DesolatorModule::DesolatorModule() :
                                 log_("desolator.log", std::fstream::out | std::fstream::app),
-                                table_(MDPState::getNumberOfStates(), 2),
-                                policy_(MDPState::getNumberOfStates(),2) {}
+                                table_ (MDPState::getNumberOfStates(), 2),
+                                policy_(MDPState::getNumberOfStates(), 2)
+    {
+        feedback_ = false;
+        startup_ = true;
+        currentSpeed_ = 50;
+        completedMatches_ = 0;
+    }
 
     void DesolatorModule::onStart() {
         // We setup the environment only if this is not a replay
         if ( Broodwar->isReplay() ) return;
 
+        if ( startup_ )
         {
             std::ifstream tFile("transitions_numbers.data"), pFile("policy.data");
 
@@ -36,7 +43,8 @@ namespace Desolator {
         // and reduce the bot's APM (Actions Per Minute).
         Broodwar->setCommandOptimizationLevel(2);
 
-        Broodwar->setLocalSpeed(50);
+        if ( !startup_ )
+            Broodwar->setLocalSpeed(currentSpeed_);
 
         if ( Broodwar->enemy() ) // First make sure there is an enemy
             Broodwar << "The matchup is " << Broodwar->self()->getRace() << " vs " << Broodwar->enemy()->getRace() << "\n";
@@ -51,11 +59,13 @@ namespace Desolator {
             unitStates_[u->getID()].setNoDraw();
         }
 
-        feedback_ = false;
+        startup_ = false;
     }
 
 
     void DesolatorModule::onEnd(bool /* isWinner */ ) {
+        ++completedMatches_;
+
         std::ofstream tFile("transitions_numbers.data");
 
         if ( tFile ) tFile << table_;
