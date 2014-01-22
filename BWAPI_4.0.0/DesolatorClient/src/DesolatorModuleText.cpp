@@ -13,7 +13,7 @@ namespace Desolator {
         else if ( text == "q" ) {
             Broodwar->leaveGame();
         }
-        else if ( text == "d" ) {
+        else if ( text == "r" ) {
             Broodwar->restartGame();
         }
         else if(feedback_) {
