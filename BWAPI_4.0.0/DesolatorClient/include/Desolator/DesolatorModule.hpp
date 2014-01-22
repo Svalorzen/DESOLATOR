@@ -55,6 +55,7 @@ namespace Desolator {
             void updateUnitState(BWAPI::Unit & unit);
             void shareKnowledge(BWAPI::Unit & unit);
             void updateUnitMDPState(BWAPI::Unit & unit);
+            Action moveUnitToPosition(BWAPI::Unit & unit, BWAPI::Position position);
     };
 
 }
