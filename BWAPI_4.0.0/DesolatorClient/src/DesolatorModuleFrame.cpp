@@ -93,18 +93,9 @@ namespace Desolator {
                             //cout << "Flee!" << endl;
                             // Obtain where to flee
                             auto position = AI::flee(u, ourUnits, theirUnits, unitStates_);
-                            //cout << "Got Position." << endl;
-                            if ( convertToTile(position) != u->getTilePosition() ) {
-                                u->move   ( position );
-                                GS.setDraw( position );
-                                action = Action::Move;
-                                //cout << "MOVE: different so we draw." << endl;
-                            }
-                            else {
-                                GS.setNoDraw();
-                                action = Action::None;
-                                //cout << "NONE: same we don't draw." << endl;
-                            }
+
+                            action = moveUnitToPosition(u, position);
+
                             break;
                         }
                         default: { // We attack
@@ -115,17 +106,7 @@ namespace Desolator {
                             PositionOrUnit target = AI::attack(u, ourUnits, theirUnits, unitStates_);
 
                             if ( target.isPosition() ) {
-                                if ( convertToTile(target.getPosition()) != u->getTilePosition() ) {
-                                    u->move   ( target.getPosition() );
-                                    GS.setDraw( target.getPosition() );
-                                    action = Action::Move;
-                                    //cout << "Moving" << endl;
-                                }
-                                else {
-                                    GS.setNoDraw();
-                                    action = Action::None;
-                                    //cout << "Nothing.." << endl;
-                                }
+                                action = moveUnitToPosition(u, target.getPosition());
                             }
                             // This check is to avoid breaking Starcraft when we spam attack command
                             else {
@@ -162,6 +143,20 @@ namespace Desolator {
                 }
             } // closure: unit iterator
         } // closure: We have enemies
+    }
+
+    Action DesolatorModule::moveUnitToPosition(BWAPI::Unit & unit, BWAPI::Position position) {
+        auto & GS = unitStates_[unit->getID()];
+
+        if (convertToTile(position) != unit->getTilePosition()) {
+            unit->move(position);
+            GS.setDraw(position);
+            return Action::Move;
+        }
+        else {
+            GS.setNoDraw();
+            return Action::None;
+        }
     }
 
 }
