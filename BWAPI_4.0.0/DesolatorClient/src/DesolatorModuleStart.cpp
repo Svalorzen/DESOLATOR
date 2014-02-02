@@ -79,8 +79,7 @@ namespace Desolator {
         }
         if (!(completedMatches_ % 50)) {
             std::cout << "-- Creating MDP model...\n";
-            AIToolbox::MDP::RLModel mdp(table_);
-            mdp.sync();
+            AIToolbox::MDP::RLModel mdp(table_, true);
             std::cout << "-- Solving data with Value Iteration...\n";
             AIToolbox::MDP::ValueIteration solver;
             auto solution = solver(mdp);

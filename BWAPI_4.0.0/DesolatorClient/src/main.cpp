@@ -37,8 +37,8 @@ int main() {
 
             // Debug draws
             //Broodwar->drawTextScreen(300,0,"FPS: %f",Broodwar->getAverageFPS());
-            module.drawTargets();
-            module.drawIDs();
+            //module.drawTargets();
+            //module.drawIDs();
 
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected()) {

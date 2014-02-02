@@ -13,7 +13,7 @@ namespace AIToolbox {
      * Please note that to obtain an epsilon-greedy policy the wrapped
      * policy needs to already be greedy with respect to the model.
      */
-    class EpsilonPolicy : PolicyInterface {
+    class EpsilonPolicy : public PolicyInterface {
         public:
             /**
              * @brief Basic constructor.
@@ -40,7 +40,7 @@ namespace AIToolbox {
              *
              * @return The chosen action.
              */
-            virtual size_t sampleAction(size_t s) const;
+            virtual size_t sampleAction(size_t s) const override;
 
             /**
              * @brief This function returns the probability of taking the specified action in the specified state.
@@ -53,13 +53,13 @@ namespace AIToolbox {
              *
              * @return The probability of taking the selected action in the specified state.
              */
-            virtual double getActionProbability(size_t s, size_t a) const;
+            virtual double getActionProbability(size_t s, size_t a) const override;
 
             /**
              * @brief This function sets the epsilon parameter.
              *
              * The epsilon parameter must be >= 0.0 and <= 1.0,
-             * otherwise the function will do nothing.
+             * otherwise the function will do throw std::invalid_argument.
              *
              * @param e The new epsilon parameter.
              */

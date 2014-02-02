@@ -18,11 +18,12 @@ namespace AIToolbox {
                  *
                  * @param s The number of states of the world.
                  * @param a The number of actions available to the agent.
+                 * @param alpha The learning rate of the QLearning method.
                  * @param discount The discount of the QLearning method.
                  * @param theta The queue threshold.
                  * @param n The number of sampling passes to do on the model upon batchUpdateQ().
                  */
-                PrioritizedSweeping(size_t s, size_t a, double discount = 0.9, double theta = 0.5, unsigned n = 50);
+                PrioritizedSweeping(size_t s, size_t a, double alpha = 0.5, double discount = 0.9, double theta = 0.5, unsigned n = 50);
 
                 /**
                  * @brief This function updates the PrioritizedSweeping internal update queue.
@@ -36,7 +37,7 @@ namespace AIToolbox {
                  * @param rew The reward obtained.
                  * @param q A pointer to the QFunction that is begin accessed.
                  */
-                virtual void stepUpdateQ(size_t s, size_t s1, size_t a, double rew, QFunction * q);
+                virtual void stepUpdateQ(size_t s, size_t s1, size_t a, double rew, QFunction * q) override;
 
                 /**
                  * @brief This function updates a QFunction based on simulated experience.
@@ -50,18 +51,18 @@ namespace AIToolbox {
                  * @param m The RLModel we sample experience from.
                  * @param q The QFunction to update.
                  */
-                virtual void batchUpdateQ(const RLModel & m, QFunction * q);
+                virtual void batchUpdateQ(const RLModel & m, QFunction * q) override;
             private:
                 double theta_;
 
                 using PriorityQueueElement = std::tuple<double, size_t, size_t>;
 
-                class PriorityTupleGreater {
+                class PriorityTupleLess {
                     public:
                         bool operator() (const PriorityQueueElement& arg1, const PriorityQueueElement& arg2) const;
                 };
 
-                std::priority_queue<PriorityQueueElement, std::vector<PriorityQueueElement>, PriorityTupleGreater> queue_;
+                std::priority_queue<PriorityQueueElement, std::vector<PriorityQueueElement>, PriorityTupleLess> queue_;
         };
     }
 }

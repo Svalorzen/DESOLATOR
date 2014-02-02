@@ -3,6 +3,7 @@
 #include <Desolator/AI.hpp>
 #include <Desolator/BWAPIHelpers.hpp>
 #include <Desolator/Random.hpp>
+#include <AIToolbox\EpsilonPolicy.hpp>
 
 #include <iostream>
 
@@ -33,9 +34,9 @@ namespace Desolator {
 
         if ( theirUnits.empty() ) {
             //   cout << "Exploring" << endl;
-            for ( auto u : ourUnits )
+            for (auto u : ourUnits) {
                 unitStates_[u->getID()].setNoDraw();
-
+            }
             // Only move when idle.
             if(!ourUnits.begin()->isMoving()) {
                 ourUnits.move(AI::explore());
@@ -79,7 +80,10 @@ namespace Desolator {
                     int selectedAction = 0;
                     //cout << "We use policy? " << usingPolicy_ << endl;
                     // We check if we follow the policy or we go full random
-                    if ( usingPolicy_ ) selectedAction = policy_.sampleAction(GS.state);
+                    if (usingPolicy_) {
+                        AIToolbox::EpsilonPolicy p(policy_,1);
+                        selectedAction = p.sampleAction(GS.state);
+                    }
                     else selectedAction = RandomInt::get(0,1);
                     //selectedAction = 1;
                     //cout << "Got action: " << selectedAction << endl;

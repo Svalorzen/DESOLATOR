@@ -117,7 +117,7 @@ namespace Desolator {
         // Record reward
         {
             // Punishment based on life lost
-            double reward = currentHealth - GS.lastHealth;
+            double reward = (currentHealth - GS.lastHealth)*2;
             // If our unit is melee it shouldn't care about dmg as much
             if ( isMelee(unit) ) reward /= 4;
 
@@ -126,8 +126,9 @@ namespace Desolator {
                 if ( isMelee(unit) )    reward += 16; // Zealots do 16, BWAPI values are wrong
                 else                    reward += 20; // Dragoons do 20
                 GS.shooted = false;
+                //std::cout << "reward after shooting: " << reward << "\n";
             }
-
+            //std::cout << "general reward: " << reward << "\n";
             //if(this->feedback && reward != 0 )
             //    Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d dmg: %d",
             //    unit->getID(), reward, GS.lastHealth, currentHealth, unit->getType().groundWeapon().damageAmount());

@@ -46,7 +46,7 @@ namespace AIToolbox {
              *
              * @return The chosen action.
              */
-            virtual size_t sampleAction(size_t s) const;
+            virtual size_t sampleAction(size_t s) const override;
 
             /**
              * @brief This function returns the probability of taking the specified action in the specified state.
@@ -56,7 +56,7 @@ namespace AIToolbox {
              *
              * @return The probability of taking the selected action in the specified state.
              */
-            virtual double getActionProbability(size_t s, size_t a) const;
+            virtual double getActionProbability(size_t s, size_t a) const override;
 
             /**
              * @brief This function sets the policy for a particular state.
@@ -153,7 +153,7 @@ namespace AIToolbox {
         if ( container.size() != getA() ) return false;
 
         double norm = static_cast<double>(std::accumulate(std::begin(container), std::end(container), 0.0));
-        auto ref = policy_[s]; // This is needed because policy_[s] by itself is a temporary, and "saving" it enables the use of transform. Boost magic!
+        decltype(policy_)::reference ref = policy_[s]; // This is needed because policy_[s] by itself is a temporary, and "saving" it enables the use of transform. Boost magic!
         std::transform(std::begin(container), std::end(container), std::begin(ref), [norm](decltype(*std::begin(container)) t){ return t/norm; });
         return true;
     }
