@@ -4,6 +4,7 @@
 #include <AIToolbox\MDP\RLModel.hpp>
 #include <AIToolbox\MDP\ValueIteration.hpp>
 #include <AIToolbox\MDP\QGreedyPolicy.hpp>
+#include <AIToolbox\MDP\Utils.hpp>
 
 #include <iostream>
 
@@ -14,8 +15,14 @@ namespace Desolator {
 
     DesolatorModule::DesolatorModule() :
                                 log_("desolator.log", std::fstream::out | std::fstream::app),
-                                table_ (MDPState::getNumberOfStates(), 2),
-                                policy_(MDPState::getNumberOfStates(), 2)
+                                S(MDPState::getNumberOfStates()), A(2),
+                                table_ (S, A),
+                                loadedPolicy_(S, A),
+                                model_(table_, false),
+                                solver_(S, A, 0.3, 0.9, 5, 200),
+                                qfun_(AIToolbox::MDP::makeQFunction(S, A)),
+                                policy_(qfun_)
+
     {
         feedback_ = false;
         startup_ = true;
@@ -34,7 +41,7 @@ namespace Desolator {
             if ( !tFile || !( tFile >> table_ ))
                 Broodwar->printf("###! COULD NOT LOAD TRANSITION NUMBERS !###");
 
-            if ( !pFile || !( pFile >> policy_ )) {
+            if ( !pFile || !( pFile >> loadedPolicy_ )) {
                 usingPolicy_ = false; 
                 Broodwar->printf("###! COULD NOT LOAD POLICY !###");
             }
@@ -72,31 +79,31 @@ namespace Desolator {
         ++completedMatches_;
         std::cout << "Completed matches: " << completedMatches_ << "\n";
         {
-            std::ofstream tFile("transitions_numbers.data");
+          //  std::ofstream tFile("transitions_numbers.data");
 
-            if (tFile) tFile << table_;
-            else         log_ << "We could not save the new experience to file.\n";
+         //   if (tFile) tFile << table_;
+         //   else         log_ << "We could not save the new experience to file.\n";
         }
-        if (!(completedMatches_ % 50)) {
-            std::cout << "-- Creating MDP model...\n";
-            AIToolbox::MDP::RLModel mdp(table_, true);
-            std::cout << "-- Solving data with Value Iteration...\n";
-            AIToolbox::MDP::ValueIteration solver;
-            auto solution = solver(mdp);
-            std::cout << "-- Creating policy...\n";
-            AIToolbox::MDP::QGreedyPolicy p(std::get<2>(solution));
+        if (!(completedMatches_ % 10)) {
             std::cout << "-- Saving policy...\n";
             std::string filename = "policy_";
             filename += std::to_string(completedMatches_);
         
             std::ofstream pFile(filename);
-            pFile << p;
+            pFile << policy_;
             std::cout << "-- Saving respective experience for policy...\n";
             filename = "experience_";
             filename += std::to_string(completedMatches_);
 
             std::ofstream tFile(filename);
             tFile << table_;
+
+            std::cout << "-- Saving policy solved with ValueIteration...\n";
+            std::string vi = "VI_policy";
+            
+            auto solution = AIToolbox::MDP::ValueIteration()(model_);
+            AIToolbox::MDP::QGreedyPolicy pp(std::get<2>(solution));
+            std::ofstream ppfile(vi); ppfile << pp;
 
             std::cout << "-- Done.\n";
         }
@@ -108,9 +115,11 @@ namespace Desolator {
         if( unit->getPlayer() == us_ ) {
             auto & GS = unitStates_[unit->getID()];
             int maxHealth =  unit->getType().maxShields() + unit->getType().maxHitPoints();
-            double penalty = - ( static_cast<double>(maxHealth)/2 );
+            double penalty = - ( static_cast<double>(maxHealth) )*1;
 
             table_.record(GS.state, GS.state, GS.lastStrategy, penalty);
+            model_.sync(GS.state, GS.lastStrategy);
+            solver_.stepUpdateQ(GS.state, GS.state, GS.lastStrategy, penalty, qfun_);
         }
     }
 }

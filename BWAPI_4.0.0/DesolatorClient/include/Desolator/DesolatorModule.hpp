@@ -9,6 +9,8 @@
 #include <Desolator/UnitState.hpp>
 #include <AIToolbox/Experience.hpp>
 #include <AIToolbox/Policy.hpp>
+#include <AIToolbox\MDP\PrioritizedSweeping.hpp>
+#include <AIToolbox\MDP\QGreedyPolicy.hpp>
 
 // Remember not to use "Broodwar" in any global class constructor!
 namespace Desolator {
@@ -48,8 +50,13 @@ namespace Desolator {
             std::ofstream log_;
 
             bool usingPolicy_;
+            size_t S, A;
             AIToolbox::Experience table_;
-            AIToolbox::Policy policy_;
+            AIToolbox::Policy loadedPolicy_;
+            AIToolbox::MDP::RLModel model_;
+            AIToolbox::MDP::PrioritizedSweeping solver_;
+            AIToolbox::MDP::QFunction qfun_;
+            AIToolbox::MDP::QGreedyPolicy policy_;
 
             // STATE METHODS
             void updateUnitState(BWAPI::Unit & unit);

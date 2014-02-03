@@ -5,6 +5,11 @@
 
 #include <queue>
 #include <tuple>
+#include <utility>
+
+#include <boost/heap/fibonacci_heap.hpp>
+#include <boost/functional/hash.hpp>
+#include <unordered_map>
 
 namespace AIToolbox {
     namespace MDP {
@@ -37,7 +42,7 @@ namespace AIToolbox {
                  * @param rew The reward obtained.
                  * @param q A pointer to the QFunction that is begin accessed.
                  */
-                virtual void stepUpdateQ(size_t s, size_t s1, size_t a, double rew, QFunction * q) override;
+                virtual void stepUpdateQ(size_t s, size_t s1, size_t a, double rew, const QFunction & q);
 
                 /**
                  * @brief This function updates a QFunction based on simulated experience.
@@ -52,6 +57,8 @@ namespace AIToolbox {
                  * @param q The QFunction to update.
                  */
                 virtual void batchUpdateQ(const RLModel & m, QFunction * q) override;
+
+                size_t getQueueLength() const;
             private:
                 double theta_;
 
@@ -62,7 +69,10 @@ namespace AIToolbox {
                         bool operator() (const PriorityQueueElement& arg1, const PriorityQueueElement& arg2) const;
                 };
 
-                std::priority_queue<PriorityQueueElement, std::vector<PriorityQueueElement>, PriorityTupleLess> queue_;
+                using QueueType = boost::heap::fibonacci_heap<PriorityQueueElement, boost::heap::compare<PriorityTupleLess>>;
+                
+                QueueType queue_;
+                std::unordered_map<std::pair<size_t, size_t>, QueueType::handle_type, boost::hash<std::pair<size_t, size_t> > > queueHandles_;
         };
     }
 }

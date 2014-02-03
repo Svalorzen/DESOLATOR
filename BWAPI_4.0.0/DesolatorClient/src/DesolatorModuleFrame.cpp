@@ -5,6 +5,7 @@
 #include <Desolator/Random.hpp>
 #include <AIToolbox\EpsilonPolicy.hpp>
 
+
 #include <iostream>
 
 using std::cout;
@@ -18,11 +19,13 @@ namespace Desolator {
     void DesolatorModule::onFrame() {
         auto & ourUnits    = us_->getUnits();
         auto & theirUnits  = them_->getUnits();
+        
+        solver_.batchUpdateQ(model_, &qfun_);
 
         // Return if the game is a replay or is paused
         if ( Broodwar->isReplay() || Broodwar->isPaused() || !Broodwar->self() )
             return;
-
+       
         // Prevent spamming by only running our onFrame once every number of latency frames.
         // Latency frames are the number of frames before commands are processed.
         if ( Broodwar->getFrameCount() % Broodwar->getLatencyFrames() != 0 )
@@ -81,10 +84,13 @@ namespace Desolator {
                     //cout << "We use policy? " << usingPolicy_ << endl;
                     // We check if we follow the policy or we go full random
                     if (usingPolicy_) {
-                        AIToolbox::EpsilonPolicy p(policy_,1);
+                        selectedAction = loadedPolicy_.sampleAction(GS.state);
+                    }
+                    else {
+                        //selectedAction = RandomInt::get(0,1);
+                        AIToolbox::EpsilonPolicy p(policy_, 0.9); // std::min(1.0, completedMatches_*0.1));
                         selectedAction = p.sampleAction(GS.state);
                     }
-                    else selectedAction = RandomInt::get(0,1);
                     //selectedAction = 1;
                     //cout << "Got action: " << selectedAction << endl;
                     switch ( selectedAction ) {

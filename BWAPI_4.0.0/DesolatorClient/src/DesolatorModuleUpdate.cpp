@@ -96,6 +96,7 @@ namespace Desolator {
             newState.setFeatureValue(MDPState::CAN_TARGET, 1);
 
         for ( auto & u : ourUnits ) {
+            if (u == unit) continue;
             int allyRealRange = getAppliedWeaponRange(u);
             auto unitsInFriendRange = u->getUnitsInRadius(allyRealRange);
 
@@ -104,7 +105,7 @@ namespace Desolator {
                 break;
             }
         }
-
+       
 
         int currentHealth = unit->getHitPoints() + unit->getShields();
         // Update health
@@ -117,7 +118,7 @@ namespace Desolator {
         // Record reward
         {
             // Punishment based on life lost
-            double reward = (currentHealth - GS.lastHealth)*2;
+            double reward = (currentHealth - GS.lastHealth) * 2;
             // If our unit is melee it shouldn't care about dmg as much
             if ( isMelee(unit) ) reward /= 4;
 
@@ -128,14 +129,14 @@ namespace Desolator {
                 GS.shooted = false;
                 //std::cout << "reward after shooting: " << reward << "\n";
             }
-            //std::cout << "general reward: " << reward << "\n";
-            //if(this->feedback && reward != 0 )
-            //    Broodwar->printf("ID: %d Reward: %f lastHealth: %d currentHealth: %d dmg: %d",
-            //    unit->getID(), reward, GS.lastHealth, currentHealth, unit->getType().groundWeapon().damageAmount());
-            //std::cout << "Old state: " << GS.state << " -- New state: " << newState << " -- Action: " << GS.lastStrategy << "Possibles: " << Strategy::Fight << " " << Strategy::Flee << endl;
-            // We are updating the MDP state so we need to update the transition table.
+           // We are updating the MDP state so we need to update the transition table.
             table_.record(GS.state, newState, GS.lastStrategy, reward);
+          //  std::cout << "RECORD: " << GS.state << " + " << GS.lastStrategy << " -> " << newState << "\n";
+            model_.sync( GS.state, GS.lastStrategy);
+            solver_.stepUpdateQ(GS.state, newState, GS.lastStrategy, reward, qfun_);
+            
         }
+       
         // Actual update
         GS.lastHealth = currentHealth;
         GS.state = newState;
