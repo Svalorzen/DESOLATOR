@@ -9,8 +9,9 @@
 #include <Desolator/UnitState.hpp>
 #include <AIToolbox/Experience.hpp>
 #include <AIToolbox/Policy.hpp>
-#include <AIToolbox\MDP\PrioritizedSweeping.hpp>
-#include <AIToolbox\MDP\QGreedyPolicy.hpp>
+#include <AIToolbox/MDP/RLModel.hpp>
+#include <AIToolbox/MDP/PrioritizedSweeping.hpp>
+#include <AIToolbox/MDP/QGreedyPolicy.hpp>
 
 // Remember not to use "Broodwar" in any global class constructor!
 namespace Desolator {
@@ -43,7 +44,6 @@ namespace Desolator {
 
             // FEEDBACK STUFF
             bool feedback_;
-            bool startup_;
             unsigned currentSpeed_;
             unsigned completedMatches_;
 
@@ -55,7 +55,6 @@ namespace Desolator {
             AIToolbox::Policy loadedPolicy_;
             AIToolbox::MDP::RLModel model_;
             AIToolbox::MDP::PrioritizedSweeping solver_;
-            AIToolbox::MDP::QFunction qfun_;
             AIToolbox::MDP::QGreedyPolicy policy_;
 
             // STATE METHODS
@@ -64,7 +63,6 @@ namespace Desolator {
             void updateUnitMDPState(BWAPI::Unit & unit);
             Action moveUnitToPosition(BWAPI::Unit & unit, BWAPI::Position position);
     };
-
 }
 
 #endif

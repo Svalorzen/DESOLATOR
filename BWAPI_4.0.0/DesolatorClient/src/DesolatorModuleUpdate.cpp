@@ -21,7 +21,6 @@ namespace Desolator {
         // We can't know the Strategy yet
         // GS.lastStrategy = CAN'T FILL
         //cout << "Stage 1 completed" << endl;
-   
 
         // Is the attack tick done?
         if ( GS.isStartingAttack && unit->isAttackFrame() ) {
@@ -106,7 +105,6 @@ namespace Desolator {
             }
         }
        
-
         int currentHealth = unit->getHitPoints() + unit->getShields();
         // Update health
         {
@@ -127,14 +125,11 @@ namespace Desolator {
                 if ( isMelee(unit) )    reward += 16; // Zealots do 16, BWAPI values are wrong
                 else                    reward += 20; // Dragoons do 20
                 GS.shooted = false;
-                //std::cout << "reward after shooting: " << reward << "\n";
             }
-           // We are updating the MDP state so we need to update the transition table.
+            // We are updating the MDP state so we need to update the transition table.
             table_.record(GS.state, newState, GS.lastStrategy, reward);
-          //  std::cout << "RECORD: " << GS.state << " + " << GS.lastStrategy << " -> " << newState << "\n";
             model_.sync( GS.state, GS.lastStrategy);
-            solver_.stepUpdateQ(GS.state, newState, GS.lastStrategy, reward, qfun_);
-            
+            solver_.stepUpdateQ(GS.state, GS.lastStrategy);
         }
        
         // Actual update
