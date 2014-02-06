@@ -68,7 +68,7 @@ namespace Desolator {
 
     void DesolatorModule::onEnd(bool isWinner ) {
         ++completedMatches_;
-        std::cout << ( isWinner ? "#### WON  ####\n" : "#### LOST ####\n";
+        std::cout << ( isWinner ? "#### WON  ####\n" : "#### LOST ####\n" );
         std::cout << "Completed matches: " << completedMatches_ << "\n";
         {
           //  std::ofstream tFile("transitions_numbers.data");
