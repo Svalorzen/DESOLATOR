@@ -116,7 +116,7 @@ namespace Desolator {
         // Record reward
         {
             // Punishment based on life lost
-            double reward = (currentHealth - GS.lastHealth) * 2;
+            double reward = (currentHealth - GS.lastHealth) * 5;
             // If our unit is melee it shouldn't care about dmg as much
             if ( isMelee(unit) ) reward /= 4;
 
@@ -128,6 +128,7 @@ namespace Desolator {
             }
             // We are updating the MDP state so we need to update the transition table.
             table_.record(GS.state, newState, GS.lastStrategy, reward);
+            GS.idtext = std::to_string(GS.state) + "," + std::to_string(static_cast<int>(GS.lastStrategy)) + "->" + std::to_string(newState);
             model_.sync( GS.state, GS.lastStrategy);
             solver_.stepUpdateQ(GS.state, GS.lastStrategy);
         }

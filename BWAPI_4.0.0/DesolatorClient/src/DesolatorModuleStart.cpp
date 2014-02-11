@@ -22,14 +22,19 @@ namespace Desolator {
                                 solver_(model_, 0.9, 0.05, 200),
                                 policy_(solver_.getQFunction())
     {
-        feedback_ = true;
-        currentSpeed_ = 50;
+        feedback_ = false; explfeedback_ = true;
+        currentSpeed_ = 0;
         completedMatches_ = 0;
+        exploration_ = 0.9;
 
         std::ifstream tFile("transitions_numbers.data"), pFile("policy.data");
 
-        if ( !tFile || !( tFile >> table_ ))
+        if (!tFile || !(tFile >> table_))
             Broodwar->printf("###! COULD NOT LOAD TRANSITION NUMBERS !###");
+        else {
+            model_.sync();
+            // solver_.sync();
+        }
 
         if ( !pFile || !( pFile >> loadedPolicy_ )) {
             usingPolicy_ = false; 
@@ -63,12 +68,15 @@ namespace Desolator {
             unitStates_[u->getID()] = uState;
             unitStates_[u->getID()].setNoDraw();
         }
+
+        episodeSteps_ = 0;
     }
 
 
     void DesolatorModule::onEnd(bool isWinner ) {
         ++completedMatches_;
-        std::cout << ( isWinner ? "#### WON  ####\n" : "#### LOST ####\n";
+        std::cout << "Steps done: " << episodeSteps_ << "\n";
+        std::cout << ( isWinner ? "#### WON  ####\n" : "#### LOST ####\n" );
         std::cout << "Completed matches: " << completedMatches_ << "\n";
         {
           //  std::ofstream tFile("transitions_numbers.data");
@@ -112,7 +120,7 @@ namespace Desolator {
         if( unit->getPlayer() == us_ ) {
             auto & GS = unitStates_[unit->getID()];
             int maxHealth =  unit->getType().maxShields() + unit->getType().maxHitPoints();
-            double penalty = - ( static_cast<double>(maxHealth) )*1;
+            double penalty = - ( static_cast<double>(maxHealth) )*2;
 
             table_.record(GS.state, GS.state, GS.lastStrategy, penalty);
             model_.sync(GS.state, GS.lastStrategy);

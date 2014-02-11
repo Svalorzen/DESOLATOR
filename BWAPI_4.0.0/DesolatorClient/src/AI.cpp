@@ -3,6 +3,8 @@
 #include <fstream>
 #include <cmath>
 
+#include <BWAPI.h>
+
 #include <Desolator/BWAPIHelpers.hpp>
 #include <Desolator/Random.hpp>
 
@@ -109,7 +111,6 @@ namespace Desolator {
                 else {
                     auto distance = std::max(minDistance, unitPos.getDistance(friendPos));
                     fieldVectors.emplace_back(
-                                                // They should go towards friends the more they are away
                                                 (unitPos.x - friendPos.x)*friendForceCovered / (distance*distance),
                                                 (unitPos.y - friendPos.y)*friendForceCovered / (distance*distance)
                                             );
@@ -126,6 +127,17 @@ namespace Desolator {
                                             (unitPos.x - enemyPos.x)*force / (distance*distance),
                                             (unitPos.y - enemyPos.y)*force / (distance*distance)
                                         );
+            }
+            // Go towards center of the map.
+            {
+                BWAPI::Position mapCenter;
+                mapCenter.x = BWAPI::Broodwar->mapWidth()*32 / 2;
+                mapCenter.y = BWAPI::Broodwar->mapHeight()*32 / 2;
+                auto distance = std::max(minDistance, unitPos.getDistance(mapCenter));
+                BWAPI::Position vector;
+                vector.x = - (unitPos.x - mapCenter.x) / 6.0;
+                vector.y = - (unitPos.y - mapCenter.y) / 6.0;
+                fieldVectors.push_back(vector);
             }
             //cout << "Stage 2 done" << endl;
             // Create final vector

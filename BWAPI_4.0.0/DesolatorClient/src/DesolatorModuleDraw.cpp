@@ -19,10 +19,8 @@ namespace Desolator {
         for ( auto u : us_->getUnits() ) {
             auto p = u->getPosition(); p.y -= 30;
             auto & GS = unitStates_[u->getID()];
-            Broodwar->drawTextMap(p, "%d %d %lu", 
-                u->getID(), 
-                GS.state.getFeatureValue(MDPState::ENEMY_PROXIMITY),
-                GS.state.operator size_t());
+            Broodwar->drawTextMap(p, "%s", 
+                GS.idtext.c_str());
         }
     }
 }

@@ -51,6 +51,7 @@ namespace Desolator {
 
             bool draw;
             BWAPI::Position drawTargetPosition;
+            std::string idtext;
     };
 
 }

@@ -38,6 +38,7 @@ namespace Desolator {
         if ( theirUnits.empty() ) {
             for (auto u : ourUnits) {
                 unitStates_[u->getID()].setNoDraw();
+                AI::flee(u, BWAPI::Unitset(), BWAPI::Unitset(), unitStates_);
             }
             // Only move when idle.
             if(!ourUnits.begin()->isMoving()) {
@@ -45,6 +46,8 @@ namespace Desolator {
             }
         }
         else {
+            if ( episodeSteps_ < 2000) ++episodeSteps_; 
+            else Broodwar->restartGame();
             // This updates the game state for each unit we have ( not the MDP state though )
             for ( auto u : ourUnits )
                 updateUnitState(u);
@@ -77,7 +80,7 @@ namespace Desolator {
                     if (usingPolicy_)
                         selectedAction = loadedPolicy_.sampleAction(GS.state);
                     else {
-                        AIToolbox::EpsilonPolicy p(policy_, 0.9); // std::min(1.0, completedMatches_*0.1));
+                        AIToolbox::EpsilonPolicy p(policy_, exploration_); // std::min(1.0, completedMatches_*0.1));
                         selectedAction = p.sampleAction(GS.state);
                     }
 
