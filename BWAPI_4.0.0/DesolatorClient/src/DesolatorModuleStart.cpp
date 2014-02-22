@@ -19,7 +19,7 @@ namespace Desolator {
                                 table_ (S, A),
                                 loadedPolicy_(S, A),
                                 model_(table_, false),
-                                solver_(model_, 0.9, 0.05, 200),
+                                solver_(model_, 0.95, 0.05, 200),
                                 policy_(solver_.getQFunction())
     {
         feedback_ = false; explfeedback_ = true;
@@ -70,61 +70,55 @@ namespace Desolator {
         }
 
         episodeSteps_ = 0;
+        episodeReward_ = 0.0;
     }
-
 
     void DesolatorModule::onEnd(bool isWinner ) {
         ++completedMatches_;
+        solver_.batchUpdateQ();
         std::cout << "Steps done: " << episodeSteps_ << "\n";
         std::cout << ( isWinner ? "#### WON  ####\n" : "#### LOST ####\n" );
         std::cout << "Completed matches: " << completedMatches_ << "\n";
         {
-          //  std::ofstream tFile("transitions_numbers.data");
-
-         //   if (tFile) tFile << table_;
-         //   else         log_ << "We could not save the new experience to file.\n";
+            std::ofstream tFile("reward.data", std::ios::app);
+            tFile << isWinner << " " << episodeReward_ << '\n';
         }
         if (!(completedMatches_ % 10)) {
-            std::cout << "-- Saving policy...\n";
-            {
-                std::string filename = "policy_";
-                filename += std::to_string(completedMatches_);
-            
-                std::ofstream pFile(filename);
-                pFile << policy_;
+            // Solve policy with value iteration.
+            auto solution = AIToolbox::MDP::ValueIteration(0.95)(model_);
+            AIToolbox::MDP::QGreedyPolicy pp(std::get<2>(solution));
+            // Check that policies are the same
+            bool same = true;
+            for (size_t s = 0; s < S; s++) {
+                for (size_t a = 0; a < A; a++) {
+                    if (pp.getActionProbability(s, a) != policy_.getActionProbability(s, a)) {
+                        same = false;
+                        goto out;
+                    }
+                }
             }
-            std::cout << "-- Saving respective experience for policy...\n";
-            {
-                std::string filename = "experience_";
-                filename += std::to_string(completedMatches_);
+        out:
+            if (same) { std::cout << "Policies are the same, continuing..\n"; }
+            else {
+                std::cout << "Policies are not the same! -- Saving policy...\n";
+                {
+                    std::string filename = "policy_";
+                    filename += std::to_string(completedMatches_);
 
-                std::ofstream tFile(filename);
-                tFile << table_;
+                    std::ofstream pFile(filename);
+                    pFile << policy_;
+                }
+                std::cout << "-- Saving policy solved with ValueIteration...\n";
+                {
+                    std::string vi = "VI_policy_";
+                    vi += std::to_string(completedMatches_);
+
+                    std::ofstream ppfile(vi); ppfile << pp;
+                }
+                std::cout << "-- Done.\n";
             }
-            std::cout << "-- Saving policy solved with ValueIteration...\n";
-            {
-                std::string vi = "VI_policy_";
-                vi += std::to_string(completedMatches_);
-                
-                auto solution = AIToolbox::MDP::ValueIteration()(model_);
-                AIToolbox::MDP::QGreedyPolicy pp(std::get<2>(solution));
-                std::ofstream ppfile(vi); ppfile << pp;
-            }
-            std::cout << "-- Done.\n";
         }
         std::cout << "#######################\n";
         Broodwar->restartGame();
-    }
-
-    void DesolatorModule::onUnitDestroy(BWAPI::Unit unit) {
-        if( unit->getPlayer() == us_ ) {
-            auto & GS = unitStates_[unit->getID()];
-            int maxHealth =  unit->getType().maxShields() + unit->getType().maxHitPoints();
-            double penalty = - ( static_cast<double>(maxHealth) )*2;
-
-            table_.record(GS.state, GS.state, GS.lastStrategy, penalty);
-            model_.sync(GS.state, GS.lastStrategy);
-            solver_.stepUpdateQ(GS.state, GS.lastStrategy);
-        }
-    }
+    }    
 }

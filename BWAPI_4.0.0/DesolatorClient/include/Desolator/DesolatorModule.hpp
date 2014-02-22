@@ -47,6 +47,7 @@ namespace Desolator {
             bool explfeedback_;
             unsigned currentSpeed_;
             unsigned completedMatches_, episodeSteps_;
+            double episodeReward_;
             double exploration_;
 
             std::ofstream log_;

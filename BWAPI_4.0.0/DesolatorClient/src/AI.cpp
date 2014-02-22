@@ -15,7 +15,7 @@ using std::endl;
 
 namespace Desolator {
     namespace AI {
-        static std::fstream log("ai.log", std::fstream::out | std::fstream::app);
+      //  static std::fstream log("ai.log", std::fstream::out | std::fstream::app);
 
         BWAPI::Position explore() {
             int x = RandomInt::get(0, BWAPI::Broodwar->mapWidth()-1);
@@ -49,7 +49,7 @@ namespace Desolator {
                     // Nothing to do...
                     else {
                         //cout << "### WAT -- no closest enemy? where is everyone? ###" << endl;
-                        log << "AI-Attack: " << __LINE__ << " -- ERROR: Called attack with no enemies in sight\n";
+        //                log << "AI-Attack: " << __LINE__ << " -- ERROR: Called attack with no enemies in sight\n";
                         return unit->getPosition();
                     }
                 }
@@ -71,7 +71,7 @@ namespace Desolator {
                 else {
                     //cout << "### WTF: NO ENEMY IN RANGE EVEN THOUGH I CAN TARGET" << endl;
                     // Broodwar->printf("Attack method for unit %d: ERROR NO ENEMY IN RANGE", unit->getID());
-                    log << "AI-Attack: " << __LINE__ << " -- ERROR: No enemy in range with canTarget true\n";
+          //          log << "AI-Attack: " << __LINE__ << " -- ERROR: No enemy in range with canTarget true\n";
                     return GS.nearestEnemy;
                 }
             }
@@ -91,9 +91,7 @@ namespace Desolator {
             double friendForceCovered = 3000.0;
             // Used to avoid infinite forces when units are near
             double minDistance = 40.0;
-
-            std::vector<BWAPI::Position> fieldVectors;
-            fieldVectors.reserve(friends.size() + enemies.size());
+            BWAPI::Position finalVector(0, 0);
 
             auto unitPos = unit->getPosition();
 
@@ -102,18 +100,14 @@ namespace Desolator {
                 auto friendPos = GS.nearestAlly->getPosition();
                 // We are not covered
                 if ( !GS.state.getFeatureValue(MDPState::FRIEND_PROXIMITY) ) {
-                    fieldVectors.emplace_back(
-                                                // They should go towards friends the more they are away
-                                                (unitPos.x - friendPos.x)*friendForceUncovered,
-                                                (unitPos.y - friendPos.y)*friendForceUncovered
-                                            );
+                    // They should go towards friends the more they are away
+                    finalVector.x += (unitPos.x - friendPos.x)*friendForceUncovered;
+                    finalVector.y += (unitPos.y - friendPos.y)*friendForceUncovered;
                 }
                 else {
                     auto distance = std::max(minDistance, unitPos.getDistance(friendPos));
-                    fieldVectors.emplace_back(
-                                                (unitPos.x - friendPos.x)*friendForceCovered / (distance*distance),
-                                                (unitPos.y - friendPos.y)*friendForceCovered / (distance*distance)
-                                            );
+                    finalVector.x += (unitPos.x - friendPos.x)*friendForceCovered / (distance*distance);
+                    finalVector.y += (unitPos.y - friendPos.y)*friendForceCovered / (distance*distance);
                 }
             }
             //cout << "Stage 1 done" << endl;
@@ -123,10 +117,8 @@ namespace Desolator {
                 auto distance = std::max(minDistance, unitPos.getDistance(enemyPos));
                 auto force = ( e->getOrderTarget() == unit ) ? enemyTargetedForce : enemyForce;
 
-                fieldVectors.emplace_back(
-                                            (unitPos.x - enemyPos.x)*force / (distance*distance),
-                                            (unitPos.y - enemyPos.y)*force / (distance*distance)
-                                        );
+                finalVector.x += (unitPos.x - enemyPos.x)*force / (distance*distance);
+                finalVector.y += (unitPos.y - enemyPos.y)*force / (distance*distance);
             }
             // Go towards center of the map.
             {
@@ -134,28 +126,20 @@ namespace Desolator {
                 mapCenter.x = BWAPI::Broodwar->mapWidth()*32 / 2;
                 mapCenter.y = BWAPI::Broodwar->mapHeight()*32 / 2;
                 auto distance = std::max(minDistance, unitPos.getDistance(mapCenter));
-                BWAPI::Position vector;
-                vector.x = - (unitPos.x - mapCenter.x) / 6.0;
-                vector.y = - (unitPos.y - mapCenter.y) / 6.0;
-                fieldVectors.push_back(vector);
+                finalVector.x += - (unitPos.x - mapCenter.x) / 6.0;
+                finalVector.y += - (unitPos.y - mapCenter.y) / 6.0;
             }
-            //cout << "Stage 2 done" << endl;
-            // Create final vector
-            BWAPI::Position finalVector(0,0);
-            for ( auto & v : fieldVectors )
-                finalVector += v;
-            //cout << "Added up." << endl;
+
             BWAPI::Position placeIwouldLikeToGo = unit->getPosition() + finalVector;
             placeIwouldLikeToGo.makeValid(); // Make sure that the place is within the bounds of the map
-            //cout << "Made valid. " << endl;
             // We get again the true movement vector
             finalVector = placeIwouldLikeToGo - unit->getPosition();
+
             // Here we normalize our vector to length 320 just because.
             double normalizedLength = 32.0 * 10;
             BWAPI::Position normalizedFinalVector = normalize(finalVector, normalizedLength);
-            //cout << "Normalized" << endl;
+
             placeIwouldLikeToGo = unit->getPosition() + normalizedFinalVector;
-            //cout << "Done, final place = " << placeIwouldLikeToGo << endl;
             return placeIwouldLikeToGo;
         }
 

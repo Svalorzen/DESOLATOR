@@ -127,6 +127,7 @@ namespace Desolator {
                 GS.shooted = false;
             }
             // We are updating the MDP state so we need to update the transition table.
+            episodeReward_ += reward;
             table_.record(GS.state, newState, GS.lastStrategy, reward);
             GS.idtext = std::to_string(GS.state) + "," + std::to_string(static_cast<int>(GS.lastStrategy)) + "->" + std::to_string(newState);
             model_.sync( GS.state, GS.lastStrategy);
@@ -136,5 +137,18 @@ namespace Desolator {
         // Actual update
         GS.lastHealth = currentHealth;
         GS.state = newState;
+    }
+
+    void DesolatorModule::onUnitDestroy(BWAPI::Unit unit) {
+        if (unit->getPlayer() == us_) {
+            auto & GS = unitStates_[unit->getID()];
+            int maxHealth = unit->getType().maxShields() + unit->getType().maxHitPoints();
+            double penalty = -(static_cast<double>(maxHealth)) * 2;
+
+            episodeReward_ += penalty;
+            table_.record(GS.state, GS.state, GS.lastStrategy, penalty);
+            model_.sync(GS.state, GS.lastStrategy);
+            solver_.stepUpdateQ(GS.state, GS.lastStrategy);
+        }
     }
 }

@@ -5,7 +5,6 @@
 #include <Desolator/Random.hpp>
 #include <AIToolbox/EpsilonPolicy.hpp>
 
-
 #include <iostream>
 
 using std::cout;
@@ -122,11 +121,11 @@ namespace Desolator {
                 else if ( GS.notMovingTurns == 3 ) {
                     //Broodwar->printf("Unit %d triggered an hack", u->getID());
 
-                    log_ << "HACK TRIGGERED" << "\n";
-                    log_ << "Action: " << GS.lastAction << " -- Strategy: " << GS.lastStrategy << "\n";
-                    log_ << "Order:  " << u->getOrder() << " -- Position: " << u->getPosition() << " -- Target Position: " << u->getTargetPosition() << "\n";
-                    log_ << "Diff = "       << u->getPosition() - u->getTargetPosition() << "\n";
-                    log_ << "Unit Tile: "   << convertToTile(u->getPosition())  << " -- Target Tile: " << convertToTile(u->getTargetPosition()) << "\n";
+                    //log_ << "HACK TRIGGERED" << "\n";
+                    //log_ << "Action: " << GS.lastAction << " -- Strategy: " << GS.lastStrategy << "\n";
+                    //log_ << "Order:  " << u->getOrder() << " -- Position: " << u->getPosition() << " -- Target Position: " << u->getTargetPosition() << "\n";
+                    //log_ << "Diff = "       << u->getPosition() - u->getTargetPosition() << "\n";
+                    //log_ << "Unit Tile: "   << convertToTile(u->getPosition())  << " -- Target Tile: " << convertToTile(u->getTargetPosition()) << "\n";
 
                     u->stop();
                     GS.setNoDraw();

@@ -18,8 +18,11 @@ int main() {
     reconnect();
 
     Desolator::DesolatorModule module;
+    int counter = 0;
 
     while( true ) {
+        if (counter == 100) break;
+        counter++;
         std::cout << "Waiting to enter match.." << std::endl;
         while ( !Broodwar->isInGame() ) {
             BWAPI::BWAPIClient.update();
@@ -38,7 +41,7 @@ int main() {
             // Debug draws
             //Broodwar->drawTextScreen(300,0,"FPS: %f",Broodwar->getAverageFPS());
             // module.drawTargets();
-            module.drawIDs();
+            //module.drawIDs();
 
             BWAPI::BWAPIClient.update();
             if (!BWAPI::BWAPIClient.isConnected()) {
