@@ -75,8 +75,10 @@ namespace Desolator {
 
     void DesolatorModule::onEnd(bool isWinner ) {
         ++completedMatches_;
+
         solver_.batchUpdateQ();
         std::cout << "Steps done: " << episodeSteps_ << "\n";
+
         std::cout << ( isWinner ? "#### WON  ####\n" : "#### LOST ####\n" );
         std::cout << "Completed matches: " << completedMatches_ << "\n";
         {
